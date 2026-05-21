@@ -1,0 +1,12 @@
+# Normalize line endings: LF in the repository for everything.
+# This keeps Docker build contexts and shell scripts valid on Linux.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary files.
+*.png  binary
+*.jpg  binary
+*.jar  binary
