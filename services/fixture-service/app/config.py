@@ -18,5 +18,8 @@ class Settings(BaseSettings):
     odds_refresh_minutes: int = 15
     outbox_poll_seconds: int = 5
 
+    # Minutes before kickoff that picks lock (kept in sync with prediction).
+    lock_offset_minutes: int = 15
+
 
 settings = Settings()

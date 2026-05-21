@@ -47,7 +47,7 @@ public class SettlementService {
                 "system:ledger-consumer",
                 "SETTLE_PICK",
                 List.of(
-                        new PostingLine(AccountRef.player(userId), stakeMinor, Direction.DEBIT),
+                        new PostingLine(AccountRef.player(userId, groupId), stakeMinor, Direction.DEBIT),
                         new PostingLine(AccountRef.pool(groupId), stakeMinor, Direction.CREDIT)));
 
         postingService.post(command);

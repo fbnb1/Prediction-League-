@@ -9,6 +9,18 @@ public record AccountRef(OwnerType ownerType, String ownerId) {
     public static final String ACTIVITY_EXPENSE_ID = "activity-expense";
     public static final String CASH_RECEIVED_ID = "cash-received";
 
+    /**
+     * A player's account within one group. The owner id is {@code userId:groupId}
+     * so deposits and losses are tracked per player per group.
+     */
+    public static AccountRef player(String userId, String groupId) {
+        return new AccountRef(OwnerType.PLAYER, userId + ":" + groupId);
+    }
+
+    /**
+     * Legacy single-key player account. Retained only so older tests keep
+     * compiling; production code paths use {@link #player(String, String)}.
+     */
     public static AccountRef player(String userId) {
         return new AccountRef(OwnerType.PLAYER, userId);
     }

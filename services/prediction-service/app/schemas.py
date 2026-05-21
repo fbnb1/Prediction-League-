@@ -22,6 +22,7 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
     user_id: str
     display_name: str
+    is_admin: bool = False
 
 
 class UserOut(BaseModel):
@@ -35,6 +36,29 @@ class UserOut(BaseModel):
 class GroupIn(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     bet_type: BetType = "EUROPEAN"
+
+
+class AdminUserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    username: str
+    display_name: str
+    is_admin: bool
+
+
+class PasswordUpdateIn(BaseModel):
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class AdminGroupIn(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    bet_type: BetType = "EUROPEAN"
+    owner_user_id: str | None = None
+
+
+class BetTypeUpdateIn(BaseModel):
+    bet_type: BetType
 
 
 class AddMemberIn(BaseModel):

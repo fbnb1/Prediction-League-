@@ -251,6 +251,38 @@ services:
       - ./services/prediction-service:/app
     command: ["sh", "-c", "pip install --no-cache-dir -r requirements-dev.txt && pytest -q"]
 
+  bff-service:
+    build: ./services/bff-service
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key-change-me}
+      PREDICTION_URL: http://prediction-service:8000
+      FIXTURE_URL: http://fixture-service:8000
+      LEDGER_URL: http://ledger-service:8080
+    depends_on:
+      prediction-service:
+        condition: service_healthy
+      fixture-service:
+        condition: service_healthy
+      ledger-service:
+        condition: service_healthy
+    ports:
+      - "${BFF_SERVICE_PORT:-8084}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  # One-off test runner: `docker compose --profile test run --rm bff-tests`.
+  bff-tests:
+    build: ./services/bff-service
+    profiles: ["test"]
+    volumes:
+      - ./services/bff-service:/app
+    command: ["sh", "-c", "pip install --no-cache-dir -r requirements-dev.txt && pytest -q"]
+
 volumes:
   ledger-db-data:
   fixture-db-data:

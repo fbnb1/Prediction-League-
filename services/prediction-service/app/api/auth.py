@@ -17,7 +17,10 @@ def register(body: RegisterIn, session: Session = Depends(get_session)) -> Token
     except UsernameAlreadyRegistered:
         raise HTTPException(status_code=409, detail="username already taken")
     return TokenOut(
-        access_token=create_token(user.id), user_id=user.id, display_name=user.display_name
+        access_token=create_token(user.id, user.is_admin),
+        user_id=user.id,
+        display_name=user.display_name,
+        is_admin=user.is_admin,
     )
 
 
@@ -28,5 +31,8 @@ def login(body: LoginIn, session: Session = Depends(get_session)) -> TokenOut:
     except InvalidCredentials:
         raise HTTPException(status_code=401, detail="invalid username or password")
     return TokenOut(
-        access_token=create_token(user.id), user_id=user.id, display_name=user.display_name
+        access_token=create_token(user.id, user.is_admin),
+        user_id=user.id,
+        display_name=user.display_name,
+        is_admin=user.is_admin,
     )

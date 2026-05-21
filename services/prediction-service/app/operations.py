@@ -68,12 +68,17 @@ def authenticate(session: Session, username: str, password: str) -> User:
     return user
 
 
-def ensure_seed_user(session: Session, username: str, password: str) -> None:
+def ensure_seed_user(
+    session: Session, username: str, password: str, is_admin: bool = False
+) -> None:
     """Idempotently create a built-in account on startup (e.g. the admin)."""
     if session.query(User).filter_by(username=username).one_or_none() is not None:
         return
-    register_user(session, username, password)
-    logger.info("seeded account %r", username)
+    user = register_user(session, username, password)
+    if is_admin:
+        user.is_admin = True
+        session.commit()
+    logger.info("seeded account %r (is_admin=%s)", username, is_admin)
 
 
 def ensure_default_pool(session: Session, owner_username: str) -> None:

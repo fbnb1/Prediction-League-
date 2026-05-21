@@ -32,9 +32,10 @@ public class LedgerService {
     }
 
     /**
-     * Records a cash pay-in: a player funds a group's pool. Posts a balanced
-     * entry -- debit CASH_RECEIVED, credit the group's POOL account -- so the
-     * group pool balance grows by the deposited amount.
+     * Records a cash pay-in: a player funds their own balance in a group. Posts
+     * a balanced entry -- debit CASH_RECEIVED, credit the depositor's per-group
+     * PLAYER account ({@code userId:groupId}) -- so that account's credit total
+     * is the amount that player has deposited into the group.
      */
     @Transactional
     public JournalEntry deposit(String groupId, String depositor, long amountMinor) {
@@ -50,7 +51,7 @@ public class LedgerService {
                 "DEPOSIT",
                 List.of(
                         new PostingLine(AccountRef.cashReceived(), amountMinor, com.predictionleague.ledger.domain.Direction.DEBIT),
-                        new PostingLine(AccountRef.pool(groupId), amountMinor, com.predictionleague.ledger.domain.Direction.CREDIT)));
+                        new PostingLine(AccountRef.player(depositor, groupId), amountMinor, com.predictionleague.ledger.domain.Direction.CREDIT)));
         return postingService.post(command);
     }
 

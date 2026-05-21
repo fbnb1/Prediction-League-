@@ -23,10 +23,11 @@ def verify_password(password: str, password_hash: str) -> bool:
     )
 
 
-def create_token(user_id: str) -> str:
+def create_token(user_id: str, is_admin: bool = False) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
+        "is_admin": is_admin,
         "iat": now,
         "exp": now + timedelta(hours=settings.jwt_ttl_hours),
     }

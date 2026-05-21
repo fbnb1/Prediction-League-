@@ -23,7 +23,10 @@ async def lifespan(app: FastAPI):
     try:
         with SessionLocal() as session:
             operations.ensure_seed_user(
-                session, settings.seed_admin_username, settings.seed_admin_password
+                session,
+                settings.seed_admin_username,
+                settings.seed_admin_password,
+                is_admin=True,
             )
             operations.ensure_default_pool(session, settings.seed_admin_username)
     except Exception:

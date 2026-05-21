@@ -1,5 +1,6 @@
 package com.predictionleague.ledger.repository;
 
+import com.predictionleague.ledger.domain.Direction;
 import com.predictionleague.ledger.domain.Posting;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,17 @@ public interface PostingRepository extends JpaRepository<Posting, Long> {
     List<Posting> findByAccountIdOrderByIdAsc(Long accountId);
 
     List<Posting> findByJournalEntryIdOrderByIdAsc(Long journalEntryId);
+
+    List<Posting> findByAccountIdAndDirectionOrderByIdAsc(Long accountId, Direction direction);
+
+    /** Total of an account's postings in one direction (credits or debits). */
+    @Query("""
+            SELECT COALESCE(SUM(p.amountMinor), 0)
+            FROM Posting p
+            WHERE p.accountId = :accountId AND p.direction = :direction
+            """)
+    long sumByAccountIdAndDirection(
+            @Param("accountId") Long accountId, @Param("direction") Direction direction);
 
     /**
      * Balance of an account, computed from its postings -- never stored.

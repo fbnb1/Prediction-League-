@@ -110,12 +110,14 @@ class LedgerIT {
         await().atMost(Duration.ofSeconds(20))
                 .untilAsserted(() -> assertThat(journalEntries.count()).isEqualTo(2));
 
-        // two losers debited 10000 each; the group's pool credited 20000 total
+        // two losers debited 10000 each; the group's pool credited 20000 total.
+        // player accounts are keyed per group: "userId:groupId".
         assertThat(balanceOf(OwnerType.POOL, "grp_test")).isEqualTo(20_000L);
-        assertThat(balanceOf(OwnerType.PLAYER, "usr_loserA")).isEqualTo(-10_000L);
-        assertThat(balanceOf(OwnerType.PLAYER, "usr_loserB")).isEqualTo(-10_000L);
+        assertThat(balanceOf(OwnerType.PLAYER, "usr_loserA:grp_test")).isEqualTo(-10_000L);
+        assertThat(balanceOf(OwnerType.PLAYER, "usr_loserB:grp_test")).isEqualTo(-10_000L);
         // the winner is never charged, so no account is created for them
-        assertThat(accounts.findByOwnerTypeAndOwnerId(OwnerType.PLAYER, "usr_winner")).isEmpty();
+        assertThat(accounts.findByOwnerTypeAndOwnerId(OwnerType.PLAYER, "usr_winner:grp_test"))
+                .isEmpty();
         assertThat(auditLog.count()).isEqualTo(2);
     }
 
