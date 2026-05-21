@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.errors import (
-    EmailAlreadyRegistered,
     GroupNotFound,
     InvalidCredentials,
+    InvalidPickForBetType,
     LockWindowClosed,
     MatchNotFound,
     NotGroupMember,
+    UsernameAlreadyRegistered,
 )
 from app.ids import new_id
 from app.models import Group, GroupMember, MatchRef, Pick, User
@@ -23,30 +24,101 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def register_user(session: Session, email: str, display_name: str, password: str) -> User:
-    if session.query(User).filter_by(email=email).one_or_none() is not None:
-        raise EmailAlreadyRegistered(email)
+def register_user(session: Session, username: str, password: str) -> User:
+    if session.query(User).filter_by(username=username).one_or_none() is not None:
+        raise UsernameAlreadyRegistered(username)
     user = User(
         id=new_id("usr"),
-        email=email,
-        display_name=display_name,
+        username=username,
+        display_name=username,
         password_hash=hash_password(password),
         created_at=_now(),
     )
     session.add(user)
     session.commit()
+    _join_default_pool(session, user)
     return user
 
 
-def authenticate(session: Session, email: str, password: str) -> User:
-    user = session.query(User).filter_by(email=email).one_or_none()
+def _join_default_pool(session: Session, user: User) -> None:
+    """Auto-enrol a user into the shared default pool, if it has been seeded.
+
+    Private groups still require an explicit join; only this pool is automatic.
+    """
+    pool = session.get(Group, settings.default_pool_id)
+    if pool is None:
+        return
+    already_member = (
+        session.query(GroupMember)
+        .filter_by(group_id=pool.id, user_id=user.id)
+        .one_or_none()
+    )
+    if already_member is not None:
+        return
+    session.add(
+        GroupMember(id=new_id("gm"), group_id=pool.id, user_id=user.id, joined_at=_now())
+    )
+    session.commit()
+
+
+def authenticate(session: Session, username: str, password: str) -> User:
+    user = session.query(User).filter_by(username=username).one_or_none()
     if user is None or not verify_password(password, user.password_hash):
         raise InvalidCredentials()
     return user
 
 
-def create_group(session: Session, name: str, owner: User) -> Group:
-    group = Group(id=new_id("grp"), name=name, owner_user_id=owner.id, created_at=_now())
+def ensure_seed_user(session: Session, username: str, password: str) -> None:
+    """Idempotently create a built-in account on startup (e.g. the admin)."""
+    if session.query(User).filter_by(username=username).one_or_none() is not None:
+        return
+    register_user(session, username, password)
+    logger.info("seeded account %r", username)
+
+
+def ensure_default_pool(session: Session, owner_username: str) -> None:
+    """Idempotently create the shared default pool and enrol every user in it."""
+    pool = session.get(Group, settings.default_pool_id)
+    if pool is None:
+        owner = session.query(User).filter_by(username=owner_username).one()
+        pool = Group(
+            id=settings.default_pool_id,
+            name=settings.default_pool_name,
+            owner_user_id=owner.id,
+            created_at=_now(),
+        )
+        session.add(pool)
+        session.commit()
+        logger.info("seeded default pool %r", settings.default_pool_name)
+
+    # Backfill: ensure pre-existing users are members too.
+    member_ids = {
+        m.user_id
+        for m in session.query(GroupMember).filter_by(group_id=pool.id).all()
+    }
+    for user in session.query(User).all():
+        if user.id not in member_ids:
+            session.add(
+                GroupMember(
+                    id=new_id("gm"),
+                    group_id=pool.id,
+                    user_id=user.id,
+                    joined_at=_now(),
+                )
+            )
+    session.commit()
+
+
+def create_group(
+    session: Session, name: str, bet_type: str, owner: User
+) -> Group:
+    group = Group(
+        id=new_id("grp"),
+        name=name,
+        bet_type=bet_type,
+        owner_user_id=owner.id,
+        created_at=_now(),
+    )
     session.add(group)
     session.add(
         GroupMember(id=new_id("gm"), group_id=group.id, user_id=owner.id, joined_at=_now())
@@ -81,6 +153,12 @@ def submit_pick(
     now = now or _now()
     if session.query(GroupMember).filter_by(group_id=group_id, user_id=user.id).one_or_none() is None:
         raise NotGroupMember(group_id)
+    group = session.get(Group, group_id)
+    if group is None:
+        raise GroupNotFound(group_id)
+    # Asian-handicap groups have no draw: you back one side against the line.
+    if group.bet_type == "ASIAN" and predicted_outcome == "DRAW":
+        raise InvalidPickForBetType(predicted_outcome)
     match_ref = session.get(MatchRef, match_id)
     if match_ref is None:
         raise MatchNotFound(match_id)

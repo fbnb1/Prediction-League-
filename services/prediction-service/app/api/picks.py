@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 
 from app import operations
 from app.db import get_session
-from app.errors import LockWindowClosed, MatchNotFound, NotGroupMember
+from app.errors import (
+    GroupNotFound,
+    InvalidPickForBetType,
+    LockWindowClosed,
+    MatchNotFound,
+    NotGroupMember,
+)
 from app.models import Pick, User
 from app.schemas import PickIn, PickOut
 from app.security import get_current_user
@@ -23,8 +29,15 @@ def submit_pick(
         )
     except NotGroupMember:
         raise HTTPException(status_code=403, detail="you are not a member of this group")
+    except GroupNotFound:
+        raise HTTPException(status_code=404, detail="group not found")
     except MatchNotFound:
         raise HTTPException(status_code=404, detail="match not found")
+    except InvalidPickForBetType:
+        raise HTTPException(
+            status_code=400,
+            detail="a draw is not a valid pick in an Asian-handicap group",
+        )
     except LockWindowClosed:
         raise HTTPException(status_code=409, detail="the lock window for this match has closed")
 

@@ -81,6 +81,7 @@ def lock_match(
                 "occurred_at": _iso(now),
                 "match_id": match_id,
                 "group_id": group.id,
+                "bet_type": group.bet_type,
                 "kickoff_at": _iso(match_ref.kickoff_at),
                 "currency": "VND",
                 "picks": picks_payload,

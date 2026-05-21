@@ -26,5 +26,13 @@ class Settings(BaseSettings):
     fixture_sync_minutes: int = 10
     lock_poll_seconds: int = 30
 
+    # Built-in account seeded on startup.
+    seed_admin_username: str = "admin"
+    seed_admin_password: str = "Internet@123"
+
+    # Shared default pool; every newly registered user joins it automatically.
+    default_pool_id: str = "grp-default-pool"
+    default_pool_name: str = "World Cup 2026 — Default Pool"
+
 
 settings = Settings()

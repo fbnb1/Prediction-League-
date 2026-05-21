@@ -8,6 +8,7 @@ import com.predictionleague.ledger.repository.AccountRepository;
 import com.predictionleague.ledger.repository.JournalEntryRepository;
 import com.predictionleague.ledger.repository.PostingRepository;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,29 @@ public class LedgerService {
         this.journalEntries = journalEntries;
         this.postings = postings;
         this.accounts = accounts;
+    }
+
+    /**
+     * Records a cash pay-in: a player funds a group's pool. Posts a balanced
+     * entry -- debit CASH_RECEIVED, credit the group's POOL account -- so the
+     * group pool balance grows by the deposited amount.
+     */
+    @Transactional
+    public JournalEntry deposit(String groupId, String depositor, long amountMinor) {
+        if (amountMinor <= 0) {
+            throw new UnbalancedEntryException("deposit amount must be a positive number of minor units");
+        }
+        String idempotencyKey = "deposit:" + UUID.randomUUID();
+        JournalEntryCommand command = new JournalEntryCommand(
+                idempotencyKey,
+                "DEPOSIT group=" + groupId + " by=" + depositor,
+                null,
+                "deposit:" + depositor,
+                "DEPOSIT",
+                List.of(
+                        new PostingLine(AccountRef.cashReceived(), amountMinor, com.predictionleague.ledger.domain.Direction.DEBIT),
+                        new PostingLine(AccountRef.pool(groupId), amountMinor, com.predictionleague.ledger.domain.Direction.CREDIT)));
+        return postingService.post(command);
     }
 
     /** Posts a manually-supplied balanced entry (e.g. a cash pay-in, or spending the pool). */

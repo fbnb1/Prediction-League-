@@ -29,8 +29,11 @@ public class SettlementService {
     }
 
     @Transactional
-    public void settleLosingPick(String eventId, String matchId, String userId, long stakeMinor) {
-        String idempotencyKey = eventId + ":" + userId;
+    public void settleLosingPick(
+            String eventId, String matchId, String groupId, String userId, long stakeMinor) {
+        // groupId is part of the key: one user may lose the same match in
+        // several groups, each its own balanced posting.
+        String idempotencyKey = eventId + ":" + groupId + ":" + userId;
 
         if (journalEntries.existsByIdempotencyKey(idempotencyKey)) {
             log.info("settlement {} already processed -- skipping", idempotencyKey);
@@ -39,15 +42,16 @@ public class SettlementService {
 
         JournalEntryCommand command = new JournalEntryCommand(
                 idempotencyKey,
-                "SETTLE_PICK match=" + matchId + " user=" + userId,
+                "SETTLE_PICK match=" + matchId + " group=" + groupId + " user=" + userId,
                 matchId,
                 "system:ledger-consumer",
                 "SETTLE_PICK",
                 List.of(
                         new PostingLine(AccountRef.player(userId), stakeMinor, Direction.DEBIT),
-                        new PostingLine(AccountRef.pool(), stakeMinor, Direction.CREDIT)));
+                        new PostingLine(AccountRef.pool(groupId), stakeMinor, Direction.CREDIT)));
 
         postingService.post(command);
-        log.info("settled {}: debit player {} / credit pool, {} minor units", idempotencyKey, userId, stakeMinor);
+        log.info("settled {}: debit player {} / credit pool {}, {} minor units",
+                idempotencyKey, userId, groupId, stakeMinor);
     }
 }

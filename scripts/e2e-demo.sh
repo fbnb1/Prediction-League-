@@ -41,9 +41,9 @@ echo "  using match $MATCH_ID"
 
 step "2. Register two players"
 ALICE="$(curl -s -X POST "$GW/api/prediction/auth/register" -H 'Content-Type: application/json' \
-  -d "{\"email\":\"alice+$TS@demo.com\",\"display_name\":\"Alice\",\"password\":\"secret123\"}")"
+  -d "{\"username\":\"alice_$TS\",\"password\":\"secret123\"}")"
 BOB="$(curl -s -X POST "$GW/api/prediction/auth/register" -H 'Content-Type: application/json' \
-  -d "{\"email\":\"bob+$TS@demo.com\",\"display_name\":\"Bob\",\"password\":\"secret123\"}")"
+  -d "{\"username\":\"bob_$TS\",\"password\":\"secret123\"}")"
 ATOK="$(field "$ALICE" access_token)"; AUID="$(field "$ALICE" user_id)"
 BTOK="$(field "$BOB" access_token)";   BUID="$(field "$BOB" user_id)"
 echo "  alice=$AUID  bob=$BUID"

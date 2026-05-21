@@ -1,9 +1,9 @@
-class EmailAlreadyRegistered(Exception):
-    """Registration with an email that already exists."""
+class UsernameAlreadyRegistered(Exception):
+    """Registration with a username that already exists."""
 
 
 class InvalidCredentials(Exception):
-    """Login with a wrong email or password."""
+    """Login with a wrong username or password."""
 
 
 class GroupNotFound(Exception):
@@ -20,3 +20,7 @@ class MatchNotFound(Exception):
 
 class LockWindowClosed(Exception):
     """A pick was submitted at or after the lock time."""
+
+
+class InvalidPickForBetType(Exception):
+    """The predicted outcome is not valid for the group's bet type."""

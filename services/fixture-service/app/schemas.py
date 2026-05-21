@@ -26,6 +26,7 @@ class OddsOut(BaseModel):
     home_odds: float
     draw_odds: float
     away_odds: float
+    handicap: float
     updated_at: datetime
 
 
@@ -43,6 +44,7 @@ class MatchPickOut(BaseModel):
 
     match_id: str
     user_id: str
+    bet_type: str
     predicted_outcome: str | None
     stake_minor: int
     auto_loss: bool

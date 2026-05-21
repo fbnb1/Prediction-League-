@@ -49,9 +49,9 @@ class LedgerIT {
               "currency": "VND",
               "result": { "home_score": 2, "away_score": 1, "outcome": "HOME" },
               "settlements": [
-                { "user_id": "usr_winner", "predicted_outcome": "HOME", "result": "WON",  "stake_minor": 10000 },
-                { "user_id": "usr_loserA", "predicted_outcome": "AWAY", "result": "LOST", "stake_minor": 10000 },
-                { "user_id": "usr_loserB", "predicted_outcome": null,   "result": "LOST", "stake_minor": 10000 }
+                { "user_id": "usr_winner", "group_id": "grp_test", "predicted_outcome": "HOME", "result": "WON",  "stake_minor": 10000 },
+                { "user_id": "usr_loserA", "group_id": "grp_test", "predicted_outcome": "AWAY", "result": "LOST", "stake_minor": 10000 },
+                { "user_id": "usr_loserB", "group_id": "grp_test", "predicted_outcome": null,   "result": "LOST", "stake_minor": 10000 }
               ]
             }
             """;
@@ -110,8 +110,8 @@ class LedgerIT {
         await().atMost(Duration.ofSeconds(20))
                 .untilAsserted(() -> assertThat(journalEntries.count()).isEqualTo(2));
 
-        // two losers debited 10000 each; the pool credited 20000 total
-        assertThat(balanceOf(OwnerType.POOL, "common-pool")).isEqualTo(20_000L);
+        // two losers debited 10000 each; the group's pool credited 20000 total
+        assertThat(balanceOf(OwnerType.POOL, "grp_test")).isEqualTo(20_000L);
         assertThat(balanceOf(OwnerType.PLAYER, "usr_loserA")).isEqualTo(-10_000L);
         assertThat(balanceOf(OwnerType.PLAYER, "usr_loserB")).isEqualTo(-10_000L);
         // the winner is never charged, so no account is created for them
@@ -130,7 +130,7 @@ class LedgerIT {
         Thread.sleep(3_000);
 
         assertThat(journalEntries.count()).isEqualTo(2);
-        assertThat(balanceOf(OwnerType.POOL, "common-pool")).isEqualTo(20_000L);
+        assertThat(balanceOf(OwnerType.POOL, "grp_test")).isEqualTo(20_000L);
     }
 
     @Test

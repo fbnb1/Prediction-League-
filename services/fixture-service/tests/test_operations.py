@@ -8,11 +8,12 @@ from app.operations import settle_match, sync_fixtures
 from app.providers.mock import MockFixtureProvider
 
 
-def _add_pick(session, match_id, user_id, predicted):
+def _add_pick(session, match_id, user_id, predicted, group_id="grp_test"):
     session.add(
         MatchPick(
             match_id=match_id,
             user_id=user_id,
+            group_id=group_id,
             predicted_outcome=predicted,
             stake_minor=10000,
             auto_loss=predicted is None,

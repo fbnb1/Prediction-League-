@@ -1,5 +1,6 @@
 package com.predictionleague.ledger.api;
 
+import com.predictionleague.ledger.api.dto.DepositRequest;
 import com.predictionleague.ledger.api.dto.ManualEntryRequest;
 import com.predictionleague.ledger.domain.JournalEntry;
 import com.predictionleague.ledger.service.AccountRef;
@@ -45,6 +46,14 @@ public class AdminController {
                 "MANUAL_ENTRY",
                 lines);
         JournalEntry entry = ledgerService.postManualEntry(command);
+        return new JournalEntryRef(entry.getId(), entry.getIdempotencyKey());
+    }
+
+    @PostMapping("/deposits")
+    @ResponseStatus(HttpStatus.CREATED)
+    public JournalEntryRef deposit(@Valid @RequestBody DepositRequest request) {
+        JournalEntry entry = ledgerService.deposit(
+                request.groupId(), request.depositor(), request.amountMinor());
         return new JournalEntryRef(entry.getId(), entry.getIdempotencyKey());
     }
 

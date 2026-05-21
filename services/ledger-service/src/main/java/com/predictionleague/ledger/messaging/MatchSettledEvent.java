@@ -23,6 +23,7 @@ public record MatchSettledEvent(
 
     public record SettlementLine(
             String userId,
+            String groupId,
             String predictedOutcome,
             SettlementResult result,
             Long stakeMinor) {

@@ -17,7 +17,7 @@ def create_group(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> Group:
-    return operations.create_group(session, body.name, user)
+    return operations.create_group(session, body.name, body.bet_type, user)
 
 
 @router.post("/{group_id}/join")
@@ -45,3 +45,12 @@ def my_groups(
     if not group_ids:
         return []
     return session.query(Group).filter(Group.id.in_(group_ids)).all()
+
+
+@router.get("", response_model=list[GroupOut])
+def all_groups(
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> list[Group]:
+    """Every group on the platform -- used to pick a target for ledger ops."""
+    return session.query(Group).order_by(Group.created_at).all()

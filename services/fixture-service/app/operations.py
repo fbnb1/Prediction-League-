@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.domain.evaluation import outcome_from_scores, settle_pick
+from app.domain.evaluation import outcome_from_scores, settle_pick, settle_pick_asian
 from app.errors import MatchAlreadySettled, MatchNotFound
 from app.messaging import rabbit
 from app.models import Match, MatchPick, Odds, OutboxEvent, Round
@@ -61,6 +61,7 @@ def refresh_odds(session: Session, provider: FixtureProvider) -> int:
                     home_odds=dto.home_odds,
                     draw_odds=dto.draw_odds,
                     away_odds=dto.away_odds,
+                    handicap=dto.handicap,
                     updated_at=now,
                 )
             )
@@ -68,6 +69,7 @@ def refresh_odds(session: Session, provider: FixtureProvider) -> int:
             odds.home_odds = dto.home_odds
             odds.draw_odds = dto.draw_odds
             odds.away_odds = dto.away_odds
+            odds.handicap = dto.handicap
             odds.updated_at = now
     session.commit()
     return len(match_ids)
@@ -90,16 +92,27 @@ def settle_match(session: Session, match_id: str, home_score: int, away_score: i
     match.outcome = outcome
     match.status = "SETTLED"
 
+    odds = session.query(Odds).filter_by(match_id=match_id).one_or_none()
+    handicap = float(odds.handicap) if odds is not None else 0.0
+
     picks = session.query(MatchPick).filter_by(match_id=match_id).all()
-    settlements = [
-        {
-            "user_id": pick.user_id,
-            "predicted_outcome": pick.predicted_outcome,
-            "result": settle_pick(pick.predicted_outcome, outcome),
-            "stake_minor": pick.stake_minor,
-        }
-        for pick in picks
-    ]
+    settlements = []
+    for pick in picks:
+        if pick.bet_type == "ASIAN":
+            result = settle_pick_asian(
+                pick.predicted_outcome, home_score, away_score, handicap
+            )
+        else:
+            result = settle_pick(pick.predicted_outcome, outcome)
+        settlements.append(
+            {
+                "user_id": pick.user_id,
+                "group_id": pick.group_id,
+                "predicted_outcome": pick.predicted_outcome,
+                "result": result,
+                "stake_minor": pick.stake_minor,
+            }
+        )
 
     payload = {
         "event": "MatchSettled",

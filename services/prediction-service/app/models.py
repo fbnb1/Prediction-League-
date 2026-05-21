@@ -10,7 +10,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True)
     display_name: Mapped[str] = mapped_column(String(128))
     password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -22,6 +22,8 @@ class Group(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(128))
     owner_user_id: Mapped[str] = mapped_column(String(64))
+    # EUROPEAN = 1X2 (home/draw/away); ASIAN = handicap (home/away vs a line).
+    bet_type: Mapped[str] = mapped_column(String(16), default="EUROPEAN")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 

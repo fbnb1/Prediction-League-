@@ -55,6 +55,9 @@ class Odds(Base):
     home_odds: Mapped[float] = mapped_column(Numeric(6, 2))
     draw_odds: Mapped[float] = mapped_column(Numeric(6, 2))
     away_odds: Mapped[float] = mapped_column(Numeric(6, 2))
+    # Asian-handicap line applied to the home team (e.g. -1.5). Signed:
+    # positive = home gives the handicap, negative = home receives it.
+    handicap: Mapped[float] = mapped_column(Numeric(4, 2), default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
@@ -67,13 +70,16 @@ class MatchPick(Base):
 
     __tablename__ = "match_picks"
     __table_args__ = (
-        UniqueConstraint("match_id", "user_id", name="uq_match_picks_match_user"),
+        UniqueConstraint(
+            "match_id", "user_id", "group_id", name="uq_match_picks_match_user_group"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     match_id: Mapped[str] = mapped_column(String(64))
     user_id: Mapped[str] = mapped_column(String(64))
-    group_id: Mapped[str | None] = mapped_column(String(64))
+    group_id: Mapped[str] = mapped_column(String(64))
+    bet_type: Mapped[str] = mapped_column(String(16), default="EUROPEAN")
     predicted_outcome: Mapped[str | None] = mapped_column(String(4))
     stake_minor: Mapped[int] = mapped_column(BigInteger)
     auto_loss: Mapped[bool] = mapped_column(Boolean, default=False)

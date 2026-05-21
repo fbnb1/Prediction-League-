@@ -48,9 +48,17 @@ class MockFixtureProvider(FixtureProvider):
 
     @staticmethod
     def _odds_for(match_id: str) -> OddsDTO:
+        home = round(random.uniform(1.5, 4.0), 2)
+        draw = round(random.uniform(2.8, 3.8), 2)
+        away = round(random.uniform(1.5, 4.0), 2)
+        # The favourite gives the Asian-handicap line. Half-point lines only,
+        # so a handicapped result can never be a push.
+        line = random.choice([0.5, 1.5, 2.5])
+        handicap = line if home <= away else -line
         return OddsDTO(
             match_id=match_id,
-            home_odds=round(random.uniform(1.5, 4.0), 2),
-            draw_odds=round(random.uniform(2.8, 3.8), 2),
-            away_odds=round(random.uniform(1.5, 4.0), 2),
+            home_odds=home,
+            draw_odds=draw,
+            away_odds=away,
+            handicap=handicap,
         )

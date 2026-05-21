@@ -6,11 +6,11 @@ from app.lock import lock_match
 from app.models import MatchRef, Pick, User
 
 
-def _user(session, email):
+def _user(session, username):
     user = User(
         id=new_id("usr"),
-        email=email,
-        display_name=email.split("@")[0],
+        username=username,
+        display_name=username,
         password_hash="x",
         created_at=datetime.now(timezone.utc),
     )
@@ -35,9 +35,9 @@ def _match_ref(session, match_id, lock_at):
 
 
 def test_lock_match_locks_picks_and_auto_losses_non_pickers(session):
-    alice = _user(session, "alice@example.com")
-    bob = _user(session, "bob@example.com")
-    group = operations.create_group(session, "Friends", alice)
+    alice = _user(session, "alice")
+    bob = _user(session, "bob")
+    group = operations.create_group(session, "Friends", "EUROPEAN", alice)
     operations.join_group(session, group.id, bob)
 
     now = datetime.now(timezone.utc)
@@ -64,8 +64,8 @@ def test_lock_match_locks_picks_and_auto_losses_non_pickers(session):
 
 
 def test_lock_match_is_idempotent(session):
-    alice = _user(session, "alice@example.com")
-    operations.create_group(session, "Friends", alice)
+    alice = _user(session, "alice")
+    operations.create_group(session, "Friends", "EUROPEAN", alice)
     now = datetime.now(timezone.utc)
     _match_ref(session, "M1", now - timedelta(minutes=20))
 

@@ -13,7 +13,23 @@ public record AccountRef(OwnerType ownerType, String ownerId) {
         return new AccountRef(OwnerType.PLAYER, userId);
     }
 
+    /** The shared common pool -- used when a posting is not tied to a group. */
     public static AccountRef pool() {
         return new AccountRef(OwnerType.POOL, COMMON_POOL_ID);
+    }
+
+    /**
+     * The pool account for one prediction group. Each group keeps its own
+     * pool, so the ledger can be read per group.
+     */
+    public static AccountRef pool(String groupId) {
+        if (groupId == null || groupId.isBlank()) {
+            return pool();
+        }
+        return new AccountRef(OwnerType.POOL, groupId);
+    }
+
+    public static AccountRef cashReceived() {
+        return new AccountRef(OwnerType.CASH_RECEIVED, CASH_RECEIVED_ID);
     }
 }

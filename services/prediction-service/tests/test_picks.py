@@ -8,11 +8,11 @@ from app.ids import new_id
 from app.models import MatchRef, User
 
 
-def _user(session, email="user@example.com"):
+def _user(session, username="testuser"):
     user = User(
         id=new_id("usr"),
-        email=email,
-        display_name="Test User",
+        username=username,
+        display_name=username,
         password_hash="x",
         created_at=datetime.now(timezone.utc),
     )
@@ -38,7 +38,7 @@ def _match_ref(session, match_id, lock_at):
 
 def test_pick_before_lock_is_accepted(session):
     user = _user(session)
-    group = operations.create_group(session, "Friends", user)
+    group = operations.create_group(session, "Friends", "EUROPEAN", user)
     now = datetime.now(timezone.utc)
     _match_ref(session, "M1", now + timedelta(hours=1))
 
@@ -51,7 +51,7 @@ def test_pick_before_lock_is_accepted(session):
 
 def test_pick_after_lock_is_rejected(session):
     user = _user(session)
-    group = operations.create_group(session, "Friends", user)
+    group = operations.create_group(session, "Friends", "EUROPEAN", user)
     now = datetime.now(timezone.utc)
     _match_ref(session, "M1", now - timedelta(minutes=1))
 
@@ -60,9 +60,9 @@ def test_pick_after_lock_is_rejected(session):
 
 
 def test_pick_by_non_member_is_rejected(session):
-    owner = _user(session, "owner@example.com")
-    outsider = _user(session, "outsider@example.com")
-    group = operations.create_group(session, "Friends", owner)
+    owner = _user(session, "owner")
+    outsider = _user(session, "outsider")
+    group = operations.create_group(session, "Friends", "EUROPEAN", owner)
     now = datetime.now(timezone.utc)
     _match_ref(session, "M1", now + timedelta(hours=1))
 

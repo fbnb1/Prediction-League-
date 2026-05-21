@@ -53,10 +53,15 @@ docker compose up -d
 
 | Endpoint | URL |
 |----------|-----|
-| API gateway | http://localhost:8080 |
+| Web UI | http://localhost:8080 |
+| API gateway | http://localhost:8080/api |
 | RabbitMQ UI | http://localhost:15672  (guest / guest) |
 
-Gateway routes: `/api/prediction`, `/api/fixture`, `/api/ledger`.
+The gateway serves a single-page web UI at `/` and proxies the API routes
+`/api/prediction`, `/api/fixture`, `/api/ledger`. The UI lets you register,
+join groups, place predictions, browse fixtures and odds, inspect the
+double-entry ledger, and drive the full settlement saga from an admin console.
+Its static assets live in [web/](web/).
 
 Stop with `docker compose down` (add `-v` to also wipe the data volumes).
 

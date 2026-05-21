@@ -20,6 +20,7 @@ class OddsDTO:
     home_odds: float
     draw_odds: float
     away_odds: float
+    handicap: float
 
 
 class FixtureProvider(ABC):

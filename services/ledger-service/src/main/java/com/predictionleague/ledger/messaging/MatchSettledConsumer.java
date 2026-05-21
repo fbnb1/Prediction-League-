@@ -34,7 +34,11 @@ public class MatchSettledConsumer {
         for (MatchSettledEvent.SettlementLine line : event.settlements()) {
             if (line.result() == MatchSettledEvent.SettlementResult.LOST) {
                 settlementService.settleLosingPick(
-                        event.eventId(), event.matchId(), line.userId(), line.stakeMinor());
+                        event.eventId(),
+                        event.matchId(),
+                        line.groupId(),
+                        line.userId(),
+                        line.stakeMinor());
             }
         }
     }

@@ -1,19 +1,19 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 Outcome = Literal["HOME", "DRAW", "AWAY"]
+BetType = Literal["EUROPEAN", "ASIAN"]
 
 
 class RegisterIn(BaseModel):
-    email: EmailStr
-    display_name: str = Field(min_length=1, max_length=128)
+    username: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=6, max_length=128)
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 
@@ -28,12 +28,13 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    email: str
+    username: str
     display_name: str
 
 
 class GroupIn(BaseModel):
     name: str = Field(min_length=1, max_length=128)
+    bet_type: BetType = "EUROPEAN"
 
 
 class GroupOut(BaseModel):
@@ -42,6 +43,7 @@ class GroupOut(BaseModel):
     id: str
     name: str
     owner_user_id: str
+    bet_type: str
     created_at: datetime
 
 

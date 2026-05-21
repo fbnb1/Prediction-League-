@@ -19,6 +19,7 @@ def handle_pick_locked(body: bytes) -> None:
     event_id = event["event_id"]
     match_id = event["match_id"]
     group_id = event.get("group_id")
+    bet_type = event.get("bet_type", "EUROPEAN")
     picks = event.get("picks", [])
     now = datetime.now(timezone.utc)
 
@@ -28,16 +29,19 @@ def handle_pick_locked(body: bytes) -> None:
                 match_id=match_id,
                 user_id=pick["user_id"],
                 group_id=group_id,
+                bet_type=bet_type,
                 predicted_outcome=pick.get("predicted_outcome"),
                 stake_minor=pick["stake_minor"],
                 auto_loss=pick.get("auto_loss", False),
                 source_event_id=event_id,
                 received_at=now,
             )
-            # (match_id, user_id) is the natural key -- redelivery just re-applies.
+            # (match_id, user_id, group_id) is the natural key -- redelivery
+            # just re-applies, and the same user can pick across many groups.
             stmt = stmt.on_conflict_do_update(
-                constraint="uq_match_picks_match_user",
+                constraint="uq_match_picks_match_user_group",
                 set_={
+                    "bet_type": stmt.excluded.bet_type,
                     "predicted_outcome": stmt.excluded.predicted_outcome,
                     "stake_minor": stmt.excluded.stake_minor,
                     "auto_loss": stmt.excluded.auto_loss,
