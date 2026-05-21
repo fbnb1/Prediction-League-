@@ -1,0 +1,14 @@
+{
+  "event": "MatchSettled",
+  "event_id": "c4d5e6f7-1234-4abc-9def-567890abcdef",
+  "event_version": 1,
+  "occurred_at": "2026-06-11T21:05:00Z",
+  "match_id": "WC2026-GS-A1",
+  "currency": "VND",
+  "result": { "home_score": 2, "away_score": 1, "outcome": "HOME" },
+  "settlements": [
+    { "user_id": "usr_01HAAA", "predicted_outcome": "HOME", "result": "WON",  "stake_minor": 10000 },
+    { "user_id": "usr_01HBBB", "predicted_outcome": "AWAY", "result": "LOST", "stake_minor": 10000 },
+    { "user_id": "usr_01HCCC", "predicted_outcome": null,   "result": "LOST", "stake_minor": 10000 }
+  ]
+}

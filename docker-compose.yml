@@ -1,0 +1,85 @@
+name: prediction-league
+
+# Infrastructure for the Prediction League platform.
+# Application services (ledger / fixture / prediction) are added per phase.
+# Database-per-service: each service gets its own isolated Postgres instance.
+
+services:
+  ledger-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ledger
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ${LEDGER_DB_PASSWORD:-ledger}
+    volumes:
+      - ledger-db-data:/var/lib/postgresql/data
+    ports:
+      - "${LEDGER_DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  fixture-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fixture
+      POSTGRES_USER: fixture
+      POSTGRES_PASSWORD: ${FIXTURE_DB_PASSWORD:-fixture}
+    volumes:
+      - fixture-db-data:/var/lib/postgresql/data
+    ports:
+      - "${FIXTURE_DB_PORT:-5434}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fixture -d fixture"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  prediction-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: prediction
+      POSTGRES_USER: prediction
+      POSTGRES_PASSWORD: ${PREDICTION_DB_PASSWORD:-prediction}
+    volumes:
+      - prediction-db-data:/var/lib/postgresql/data
+    ports:
+      - "${PREDICTION_DB_PORT:-5435}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prediction -d prediction"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${GATEWAY_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  ledger-db-data:
+  fixture-db-data:
+  prediction-db-data:

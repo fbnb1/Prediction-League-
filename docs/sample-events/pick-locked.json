@@ -1,0 +1,15 @@
+{
+  "event": "PickLocked",
+  "event_id": "9f1c2e7a-3b8d-4c21-9a5e-2d6f0b1c4e88",
+  "event_version": 1,
+  "occurred_at": "2026-06-11T18:45:00Z",
+  "match_id": "WC2026-GS-A1",
+  "group_id": "grp_01HXYZ",
+  "kickoff_at": "2026-06-11T19:00:00Z",
+  "currency": "VND",
+  "picks": [
+    { "user_id": "usr_01HAAA", "predicted_outcome": "HOME", "stake_minor": 10000, "auto_loss": false },
+    { "user_id": "usr_01HBBB", "predicted_outcome": "AWAY", "stake_minor": 10000, "auto_loss": false },
+    { "user_id": "usr_01HCCC", "predicted_outcome": null,   "stake_minor": 10000, "auto_loss": true  }
+  ]
+}
