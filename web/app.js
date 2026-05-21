@@ -609,8 +609,28 @@ async function loadAdmin() {
     fillSelect('#lock-match', scheduled.length ? scheduled : matches, m => `${m.home_team} v ${m.away_team}`);
     fillSelect('#kickoff-match', matches, m => `${m.home_team} v ${m.away_team} — ${m.status}`);
     fillSelect('#deposit-group', sortGroups(groups), g => g.name);
+    fillSelect('#add-member-group', sortGroups(groups), g => g.name);
+    loadDepositMembers();
   } catch (err) { toastErr(err); }
 }
+
+// Populate the deposit depositor dropdown with the selected group's members.
+async function loadDepositMembers() {
+  const groupId = $('#deposit-group').value;
+  const sel = $('#deposit-depositor');
+  if (!groupId) { sel.innerHTML = '<option value="">—</option>'; return; }
+  sel.innerHTML = '<option value="">Loading members…</option>';
+  try {
+    const members = await api(
+      `${API.prediction}/groups/${encodeURIComponent(groupId)}/members`, { auth: true });
+    sel.innerHTML = members.length
+      ? members.map(m => `<option value="${esc(m.username)}">${esc(m.display_name)} (${esc(m.username)})</option>`).join('')
+      : '<option value="">No members in this group</option>';
+  } catch (err) {
+    sel.innerHTML = '<option value="">Could not load members</option>';
+  }
+}
+$('#deposit-group').addEventListener('change', loadDepositMembers);
 function fillSelect(sel, items, label) {
   const el = $(sel);
   el.innerHTML = items.length
@@ -687,6 +707,25 @@ $('#admin-group-form').addEventListener('submit', async (e) => {
     toast('Group created', `"${name}" — ${betType === 'ASIAN' ? 'Asian handicap' : 'European 1X2'}.`);
     e.target.reset();
     loadAdmin();
+  } catch (err) { toastErr(err); }
+  finally { btn.disabled = false; }
+});
+
+$('#add-member-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const groupId = $('#add-member-group').value;
+  const username = $('#add-member-username').value.trim();
+  if (!groupId) return toast('Pick a group', '', 'warn');
+  if (!username) return toast('Enter a username', '', 'warn');
+  const btn = e.submitter || e.target.querySelector('button');
+  btn.disabled = true;
+  try {
+    await api(`${API.prediction}/admin/groups/${encodeURIComponent(groupId)}/members`, {
+      method: 'POST', adminKey: true, body: { username },
+    });
+    toast('User added', `"${username}" was added to the group.`);
+    e.target.reset();
+    loadDepositMembers();
   } catch (err) { toastErr(err); }
   finally { btn.disabled = false; }
 });

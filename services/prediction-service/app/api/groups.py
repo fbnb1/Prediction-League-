@@ -5,7 +5,7 @@ from app import operations
 from app.db import get_session
 from app.errors import GroupNotFound
 from app.models import Group, GroupMember, User
-from app.schemas import GroupIn, GroupOut
+from app.schemas import GroupIn, GroupOut, MemberOut
 from app.security import get_current_user
 
 router = APIRouter(prefix="/groups", tags=["groups"])
@@ -54,3 +54,22 @@ def all_groups(
 ) -> list[Group]:
     """Every group on the platform -- used to pick a target for ledger ops."""
     return session.query(Group).order_by(Group.created_at).all()
+
+
+@router.get("/{group_id}/members", response_model=list[MemberOut])
+def group_members(
+    group_id: str,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> list[MemberOut]:
+    """The members of a group -- used to pick a depositor for ledger ops."""
+    user_ids = [
+        m.user_id for m in session.query(GroupMember).filter_by(group_id=group_id).all()
+    ]
+    if not user_ids:
+        return []
+    users = session.query(User).filter(User.id.in_(user_ids)).all()
+    return [
+        MemberOut(user_id=u.id, username=u.username, display_name=u.display_name)
+        for u in users
+    ]

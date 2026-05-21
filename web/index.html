@@ -188,11 +188,20 @@
             </form>
           </div>
           <div class="panel">
+            <div class="panel-head"><h3>Add a user to a group</h3></div>
+            <p class="hint">Add an existing account to a group by username, so the user can predict in it.</p>
+            <form id="add-member-form" class="inline-form">
+              <select id="add-member-group" required></select>
+              <input type="text" id="add-member-username" placeholder="Username to add" required />
+              <button type="submit" class="btn btn-secondary">Add to group</button>
+            </form>
+          </div>
+          <div class="panel">
             <div class="panel-head"><h3>Record a deposit into a group</h3></div>
-            <p class="hint">A player pays cash into a group pool — e.g. "Player A deposits 10,000 into Group X". This credits the group's pool account in the ledger.</p>
+            <p class="hint">A player pays cash into a group pool — e.g. "Player A deposits 10,000 into Group X". This credits the group's pool account in the ledger. Pick the depositor from the group's members.</p>
             <form id="deposit-form" class="inline-form">
               <select id="deposit-group" required></select>
-              <input type="text" id="deposit-depositor" placeholder="Depositor (username)" required />
+              <select id="deposit-depositor" required></select>
               <input type="number" id="deposit-amount" min="1" step="1" placeholder="Amount (e.g. 10000)" required />
               <button type="submit" class="btn btn-primary">Record deposit</button>
             </form>

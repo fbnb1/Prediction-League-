@@ -37,6 +37,18 @@ class GroupIn(BaseModel):
     bet_type: BetType = "EUROPEAN"
 
 
+class AddMemberIn(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+
+
+class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: str
+    username: str
+    display_name: str
+
+
 class GroupOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
