@@ -167,10 +167,15 @@ const VIEW_META = {
 
 let currentView = 'matches';
 
+// The seeded admin account is the only one allowed to see the Admin Console.
+const isAdmin = () => (store.user?.name || '') === 'admin';
+
 function enterApp() {
   const u = store.user;
   $('#auth-screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
+  const adminNav = document.querySelector('.nav-item[data-view="admin"]');
+  if (adminNav) adminNav.classList.toggle('hidden', !isAdmin());
   $('#user-name').textContent = u?.name || 'User';
   $('#user-id').textContent = (u?.id || '').slice(0, 16);
   $('#user-avatar').textContent = (u?.name || 'U').trim().charAt(0).toUpperCase();
@@ -182,6 +187,7 @@ function enterApp() {
 $$('.nav-item').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
 
 function switchView(view) {
+  if (view === 'admin' && !isAdmin()) view = 'matches';
   currentView = view;
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   $$('.view').forEach(v => v.classList.add('hidden'));
@@ -412,12 +418,10 @@ async function loadGroups() {
 $('#group-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = e.target.name.value.trim();
-  const betType = e.target.bet_type.value;
   try {
-    await api(`${API.prediction}/groups`, {
-      method: 'POST', auth: true, body: { name, bet_type: betType },
-    });
-    toast('Group created', `"${name}" — ${betType === 'ASIAN' ? 'Asian handicap' : 'European 1X2'}.`);
+    // No bet_type here -- the market is assigned by an administrator.
+    await api(`${API.prediction}/groups`, { method: 'POST', auth: true, body: { name } });
+    toast('Group created', `"${name}" is ready.`);
     e.target.reset();
     loadGroups();
   } catch (err) { toastErr(err); }
@@ -667,6 +671,24 @@ $('#admin-kickoff').addEventListener('click', async (e) => {
     loadAdmin();
   } catch (err) { toastErr(err); }
   finally { e.target.disabled = false; }
+});
+
+$('#admin-group-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#admin-group-name').value.trim();
+  const betType = $('#admin-group-bet-type').value;
+  if (!name) return toast('Enter a group name', '', 'warn');
+  const btn = e.submitter || e.target.querySelector('button');
+  btn.disabled = true;
+  try {
+    await api(`${API.prediction}/groups`, {
+      method: 'POST', auth: true, body: { name, bet_type: betType },
+    });
+    toast('Group created', `"${name}" — ${betType === 'ASIAN' ? 'Asian handicap' : 'European 1X2'}.`);
+    e.target.reset();
+    loadAdmin();
+  } catch (err) { toastErr(err); }
+  finally { btn.disabled = false; }
 });
 
 $('#deposit-form').addEventListener('submit', async (e) => {

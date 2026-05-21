@@ -105,13 +105,9 @@
             <div class="panel-head">
               <h3>Create a group</h3>
             </div>
-            <p class="hint">Every account already belongs to the shared default pool. Create a private group to run your own pool — and choose its betting market.</p>
+            <p class="hint">Every account already belongs to the shared default pool. Create a private group to run your own pool. The betting market is set by an administrator — your group predicts whichever market it was assigned.</p>
             <form id="group-form" class="inline-form">
               <input type="text" name="name" placeholder="Group name, e.g. Office Pool" required />
-              <select name="bet_type" title="Betting market">
-                <option value="EUROPEAN">European odds (1X2)</option>
-                <option value="ASIAN">Asian handicap</option>
-              </select>
               <button type="submit" class="btn btn-primary">Create</button>
             </form>
           </div>
@@ -178,6 +174,18 @@
               <button class="btn btn-secondary" id="save-key-btn">Save key</button>
             </div>
             <p class="hint">Stored in this browser only. Required for the operations below.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Create a group with a betting market</h3></div>
+            <p class="hint">Only an administrator assigns a group's market. Members then predict that market — European (1X2) or Asian handicap.</p>
+            <form id="admin-group-form" class="inline-form">
+              <input type="text" id="admin-group-name" placeholder="Group name" required />
+              <select id="admin-group-bet-type" title="Betting market">
+                <option value="EUROPEAN">European odds (1X2)</option>
+                <option value="ASIAN">Asian handicap</option>
+              </select>
+              <button type="submit" class="btn btn-primary">Create group</button>
+            </form>
           </div>
           <div class="panel">
             <div class="panel-head"><h3>Record a deposit into a group</h3></div>
