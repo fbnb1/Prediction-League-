@@ -1,0 +1,18 @@
+{
+  "tournament": "FIFA World Cup 2026 (mock seed data, not the official draw)",
+  "group_stage_start": "2026-06-11",
+  "groups": {
+    "A": ["Argentina", "Colombia", "Ecuador", "Ivory Coast"],
+    "B": ["Brazil", "Mexico", "Switzerland", "Peru"],
+    "C": ["France", "USA", "Denmark", "Chile"],
+    "D": ["England", "Canada", "Poland", "Paraguay"],
+    "E": ["Spain", "Japan", "Serbia", "Costa Rica"],
+    "F": ["Germany", "South Korea", "Wales", "Panama"],
+    "G": ["Portugal", "Australia", "Iran", "Jamaica"],
+    "H": ["Netherlands", "Senegal", "Saudi Arabia", "Norway"],
+    "I": ["Belgium", "Morocco", "Qatar", "Sweden"],
+    "J": ["Croatia", "Nigeria", "Tunisia", "Austria"],
+    "K": ["Italy", "Ghana", "Egypt", "Ukraine"],
+    "L": ["Uruguay", "Cameroon", "Algeria", "Turkey"]
+  }
+}
