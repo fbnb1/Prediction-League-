@@ -71,9 +71,17 @@ services:
     image: nginx:1.27-alpine
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./web:/usr/share/nginx/html:ro
     ports:
       - "${GATEWAY_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # The React single-page app, built by Vite and served by its own nginx.
+  web:
+    build: ./web
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
       interval: 10s
