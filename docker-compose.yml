@@ -200,6 +200,56 @@ services:
       - ./services/fixture-service:/app
     command: ["sh", "-c", "pip install --no-cache-dir -r requirements-dev.txt && pytest -q"]
 
+  prediction-service:
+    build: ./services/prediction-service
+    environment:
+      PREDICTION_DB_URL: postgresql+psycopg://prediction:prediction@prediction-db:5432/prediction
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key-change-me}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me}
+      FIXTURE_SERVICE_URL: http://fixture-service:8000
+    depends_on:
+      prediction-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "${PREDICTION_SERVICE_PORT:-8083}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  prediction-test-db:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: prediction
+      POSTGRES_USER: prediction
+      POSTGRES_PASSWORD: prediction
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prediction -d prediction"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # One-off test runner: `docker compose --profile test run --rm prediction-tests`.
+  prediction-tests:
+    build: ./services/prediction-service
+    profiles: ["test"]
+    environment:
+      PREDICTION_DB_URL: postgresql+psycopg://prediction:prediction@prediction-test-db:5432/prediction
+    depends_on:
+      prediction-test-db:
+        condition: service_healthy
+    volumes:
+      - ./services/prediction-service:/app
+    command: ["sh", "-c", "pip install --no-cache-dir -r requirements-dev.txt && pytest -q"]
+
 volumes:
   ledger-db-data:
   fixture-db-data:

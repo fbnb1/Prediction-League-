@@ -44,7 +44,7 @@ Stop with `docker compose down` (add `-v` to also wipe the data volumes).
 - [x] Phase 0 — monorepo scaffold & infrastructure
 - [x] Phase 1 — Ledger service
 - [x] Phase 2 — Fixture service
-- [ ] Phase 3 — Prediction service
+- [x] Phase 3 — Prediction service
 - [ ] Phase 4 — end-to-end integration
 
 ## Repository layout
