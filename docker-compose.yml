@@ -152,6 +152,54 @@ services:
         condition: service_healthy
     command: ["mvn", "-B", "verify"]
 
+  fixture-service:
+    build: ./services/fixture-service
+    environment:
+      FIXTURE_DB_URL: postgresql+psycopg://fixture:fixture@fixture-db:5432/fixture
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key-change-me}
+    depends_on:
+      fixture-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "${FIXTURE_SERVICE_PORT:-8082}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  fixture-test-db:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: fixture
+      POSTGRES_USER: fixture
+      POSTGRES_PASSWORD: fixture
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fixture -d fixture"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # One-off test runner: `docker compose --profile test run --rm fixture-tests`.
+  fixture-tests:
+    build: ./services/fixture-service
+    profiles: ["test"]
+    environment:
+      FIXTURE_DB_URL: postgresql+psycopg://fixture:fixture@fixture-test-db:5432/fixture
+    depends_on:
+      fixture-test-db:
+        condition: service_healthy
+    volumes:
+      - ./services/fixture-service:/app
+    command: ["sh", "-c", "pip install --no-cache-dir -r requirements-dev.txt && pytest -q"]
+
 volumes:
   ledger-db-data:
   fixture-db-data:

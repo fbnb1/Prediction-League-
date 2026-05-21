@@ -1,0 +1,127 @@
+import logging
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from app.domain.evaluation import outcome_from_scores, settle_pick
+from app.errors import MatchAlreadySettled, MatchNotFound
+from app.messaging import rabbit
+from app.models import Match, MatchPick, Odds, OutboxEvent, Round
+from app.providers.base import FixtureProvider
+
+logger = logging.getLogger(__name__)
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def sync_fixtures(session: Session, provider: FixtureProvider) -> int:
+    """Load fixtures from the provider into the DB. Idempotent: only inserts
+    matches that do not already exist. Returns the number created."""
+    round_ = session.query(Round).filter_by(code="GROUP").one_or_none()
+    if round_ is None:
+        round_ = Round(code="GROUP", name="Group Stage", sequence=1)
+        session.add(round_)
+        session.flush()
+
+    created = 0
+    for fixture in provider.get_fixtures():
+        if session.get(Match, fixture.match_id) is None:
+            session.add(
+                Match(
+                    id=fixture.match_id,
+                    round_id=round_.id,
+                    group_code=fixture.group_code,
+                    home_team=fixture.home_team,
+                    away_team=fixture.away_team,
+                    kickoff_at=fixture.kickoff_at,
+                    status="SCHEDULED",
+                    stake_minor=fixture.stake_minor,
+                )
+            )
+            created += 1
+    session.commit()
+    return created
+
+
+def refresh_odds(session: Session, provider: FixtureProvider) -> int:
+    """Refresh odds for every match (overwrite in place). Returns the count."""
+    match_ids = [row[0] for row in session.query(Match.id).all()]
+    if not match_ids:
+        return 0
+    now = _now()
+    for dto in provider.get_odds(match_ids):
+        odds = session.query(Odds).filter_by(match_id=dto.match_id).one_or_none()
+        if odds is None:
+            session.add(
+                Odds(
+                    match_id=dto.match_id,
+                    home_odds=dto.home_odds,
+                    draw_odds=dto.draw_odds,
+                    away_odds=dto.away_odds,
+                    updated_at=now,
+                )
+            )
+        else:
+            odds.home_odds = dto.home_odds
+            odds.draw_odds = dto.draw_odds
+            odds.away_odds = dto.away_odds
+            odds.updated_at = now
+    session.commit()
+    return len(match_ids)
+
+
+def settle_match(session: Session, match_id: str, home_score: int, away_score: int) -> dict:
+    """
+    Record a match result and stage a MatchSettled event in the outbox -- all
+    in one transaction (the transactional outbox pattern). Returns the payload.
+    """
+    match = session.get(Match, match_id)
+    if match is None:
+        raise MatchNotFound(match_id)
+    if match.status == "SETTLED":
+        raise MatchAlreadySettled(match_id)
+
+    outcome = outcome_from_scores(home_score, away_score)
+    match.home_score = home_score
+    match.away_score = away_score
+    match.outcome = outcome
+    match.status = "SETTLED"
+
+    picks = session.query(MatchPick).filter_by(match_id=match_id).all()
+    settlements = [
+        {
+            "user_id": pick.user_id,
+            "predicted_outcome": pick.predicted_outcome,
+            "result": settle_pick(pick.predicted_outcome, outcome),
+            "stake_minor": pick.stake_minor,
+        }
+        for pick in picks
+    ]
+
+    payload = {
+        "event": "MatchSettled",
+        "event_id": str(uuid.uuid4()),
+        "event_version": 1,
+        "occurred_at": _now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "match_id": match_id,
+        "currency": "VND",
+        "result": {"home_score": home_score, "away_score": away_score, "outcome": outcome},
+        "settlements": settlements,
+    }
+    session.add(
+        OutboxEvent(
+            aggregate_id=match_id,
+            event_type="MatchSettled",
+            routing_key=rabbit.MATCH_SETTLED_ROUTING_KEY,
+            payload=payload,
+            created_at=_now(),
+            published_at=None,
+        )
+    )
+    session.commit()
+    logger.info("settled match %s (%s); %d settlement(s) staged in outbox",
+                match_id, outcome, len(settlements))
+    return payload
