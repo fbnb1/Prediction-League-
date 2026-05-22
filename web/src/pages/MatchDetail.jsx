@@ -5,7 +5,7 @@ import { useGroups } from '../context/GroupContext.jsx';
 import { useFetch } from '../hooks/useFetch.js';
 import { PieChart } from '../components/PieChart.jsx';
 import { DataTable } from '../components/DataTable.jsx';
-import { Money } from '../components/Money.jsx';
+import { Points } from '../components/Points.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { formatDateTime } from '../utils/format.js';
 
@@ -87,11 +87,11 @@ export function MatchDetail() {
         method: 'POST',
         body: { group_id: groupId, match_id: matchId, predicted_outcome: outcome },
       });
-      toast.success('Đã đặt cược');
+      toast.success('Đã dự đoán');
       myPicks.reload();
       detail.reload();
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Không đặt được cược';
+      const msg = err instanceof ApiError ? err.message : 'Không đặt được dự đoán';
       setBetError(msg);
       toast.error(msg);
     } finally {
@@ -117,10 +117,10 @@ export function MatchDetail() {
   const loserColumns = [
     { key: 'display_name', label: 'Người thua', render: (r) => <strong>{r.display_name}</strong> },
     {
-      key: 'stake_minor',
-      label: 'Tiền cược',
+      key: 'round_multiplier',
+      label: 'Điểm thua',
       align: 'right',
-      render: (r) => <Money minor={r.stake_minor} tone="neg" />,
+      render: (r) => <Points pts={r.round_multiplier} tone="neg" />,
     },
   ];
 
@@ -148,7 +148,7 @@ export function MatchDetail() {
         </div>
       </div>
 
-      <div className="section-title">Chọn kèo</div>
+      <div className="section-title">Dự đoán</div>
       {odds.loading ? (
         <div className="panel">
           <div className="hint" style={{ margin: 0 }}>Đang tải tỷ lệ kèo…</div>
@@ -164,7 +164,7 @@ export function MatchDetail() {
             <div className="panel">
               <div className="panel-head">
                 <h3>
-                  Kèo châu Á (Handicap){' '}
+                  Dự đoán (Châu Á){' '}
                   <span className="badge asian" style={{ marginLeft: 6 }}>
                     Đang áp dụng
                   </span>
@@ -196,7 +196,7 @@ export function MatchDetail() {
             <div className="panel">
               <div className="panel-head">
                 <h3>
-                  Kèo châu Âu (1X2){' '}
+                  Dự đoán (Châu Âu){' '}
                   <span className="badge european" style={{ marginLeft: 6 }}>
                     Đang áp dụng
                   </span>
@@ -229,7 +229,7 @@ export function MatchDetail() {
           )}
 
           {!canBet ? (
-            <div className="hint">Đã khoá cược cho trận này.</div>
+            <div className="hint">Đã khoá dự đoán cho trận này.</div>
           ) : picked ? (
             <div className="bet-status ok">
               Bạn đang đặt: <strong>
@@ -243,7 +243,7 @@ export function MatchDetail() {
             </div>
           ) : (
             <div className="hint">
-              Chọn một ô kèo {betType === 'ASIAN' ? 'châu Á' : 'châu Âu'} để đặt cược.
+              Chọn kết quả để dự đoán.
             </div>
           )}
           {betError && <div className="bet-status err">{betError}</div>}
@@ -256,8 +256,8 @@ export function MatchDetail() {
       </div>
 
       <div className="section-title">
-        Người thua trận này — tổng thu{' '}
-        <Money minor={data.total_collected_minor} tone="auto" />
+        Người thua trận này — tổng điểm{' '}
+        <Points pts={data.total_points} tone="neg" />
       </div>
       <DataTable
         columns={loserColumns}
