@@ -1,8 +1,6 @@
-const vnd = new Intl.NumberFormat('vi-VN');
-
-// Money is stored in minor units (1/100). Display as whole đồng with the ₫ suffix.
-export function formatMoney(amountMinor) {
-  return `${vnd.format(Math.round((amountMinor || 0) / 100))} ₫`;
+// Points are integers. 1 điểm = 10,000 ₫ (tracked externally by admin).
+export function formatPoints(pts) {
+  return `${pts ?? 0} điểm`;
 }
 
 export function formatDateTime(iso) {
