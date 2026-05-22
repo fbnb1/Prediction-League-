@@ -9,7 +9,7 @@ client = TestClient(app)
 
 
 @respx.mock
-def test_leaderboard_aggregates_picks_and_deposits(user_token):
+def test_leaderboard_aggregates_picks_and_points(user_token):
     group_id = "grp_1"
     respx.get(f"{settings.prediction_url}/groups/{group_id}/members").mock(
         return_value=httpx.Response(
@@ -24,21 +24,10 @@ def test_leaderboard_aggregates_picks_and_deposits(user_token):
         return_value=httpx.Response(
             200,
             json=[
-                _pick("usr_1", "LOST", 30000),
-                _pick("usr_1", "WON", 10000),
-                _pick("usr_2", "WON", 10000),
+                _pick("usr_1", "LOST", multiplier=4),
+                _pick("usr_1", "WON", multiplier=2),
+                _pick("usr_2", "WON", multiplier=2),
             ],
-        )
-    )
-    respx.get(f"{settings.ledger_url}/accounts/player").mock(
-        side_effect=lambda request: httpx.Response(
-            200,
-            json={
-                "owner_id": f"{request.url.params['userId']}:{group_id}",
-                "debit_minor": 0,
-                "credit_minor": 20000,
-                "balance_minor": 20000,
-            },
         )
     )
 
@@ -48,10 +37,9 @@ def test_leaderboard_aggregates_picks_and_deposits(user_token):
     )
     assert response.status_code == 200
     rows = response.json()
-    # Ordered by money lost, descending: usr_1 (30000) before usr_2 (0).
+    # Ordered by points_lost descending: usr_1 (4 pts) before usr_2 (0 pts).
     assert [r["user_id"] for r in rows] == ["usr_1", "usr_2"]
-    assert rows[0]["money_lost_minor"] == 30000
-    assert rows[0]["money_owed_minor"] == 10000  # 30000 lost - 20000 deposited
+    assert rows[0]["points_lost"] == 4
     assert rows[0]["form"] == ["W", "L"]
 
 
@@ -60,13 +48,13 @@ def test_leaderboard_requires_auth():
     assert response.status_code == 401
 
 
-def _pick(user_id, result, stake):
+def _pick(user_id, result, multiplier=2):
     return {
         "match_id": "m1",
         "user_id": user_id,
         "predicted_outcome": "HOME",
         "auto_loss": False,
-        "stake_minor": stake,
+        "round_multiplier": multiplier,
         "bet_type": "EUROPEAN",
         "home_team": "A",
         "away_team": "B",
