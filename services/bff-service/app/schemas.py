@@ -9,11 +9,9 @@ class LeaderboardRow(BaseModel):
     total_picks: int
     wins: int
     losses: int
-    win_rate: float  # 0..1 over settled picks; 0 when none are settled
-    form: list[str]  # up to 5 recent settled results, "W"/"L", newest first
-    money_lost_minor: int
-    money_deposited_minor: int
-    money_owed_minor: int  # lost - deposited
+    win_rate: float
+    form: list[str]
+    points_lost: int  # sum of round_multiplier for LOST picks
 
 
 class PickHistoryItem(BaseModel):
@@ -22,7 +20,7 @@ class PickHistoryItem(BaseModel):
     away_team: str
     kickoff_at: datetime
     predicted_outcome: str | None
-    stake_minor: int
+    round_multiplier: int
     status: str
     outcome: str | None
     home_score: int | None
@@ -30,27 +28,17 @@ class PickHistoryItem(BaseModel):
     result: str  # WON | LOST | PENDING
 
 
-class DepositItem(BaseModel):
-    user_id: str
-    display_name: str
-    amount_minor: int
-    posted_at: datetime | None
-
-
 class PlayerSummary(BaseModel):
     user_id: str
     display_name: str
-    money_lost_minor: int
-    money_deposited_minor: int
-    money_owed_minor: int
+    points_lost: int
     picks: list[PickHistoryItem]  # newest first
-    deposits: list[DepositItem]  # newest first
 
 
 class LoserItem(BaseModel):
     user_id: str
     display_name: str
-    stake_minor: int
+    round_multiplier: int
 
 
 class MatchDetail(BaseModel):
@@ -62,18 +50,23 @@ class MatchDetail(BaseModel):
     outcome: str | None
     home_score: int | None
     away_score: int | None
-    pick_distribution: dict[str, int]  # HOME/DRAW/AWAY -> count, in this group
+    pick_distribution: dict[str, int]
     losers: list[LoserItem]
-    total_collected_minor: int  # sum of losers' stakes
+    total_points: int
 
 
-class DepositIn(BaseModel):
-    depositor: str
-    amount_minor: int
+class RoundOut(BaseModel):
+    id: int
+    code: str
+    name: str
+    sequence: int
+    multiplier: int
 
 
-class OddsUpdateIn(BaseModel):
-    home_odds: float
-    draw_odds: float
-    away_odds: float
-    handicap: float
+class RoundMultiplierIn(BaseModel):
+    multiplier: int
+
+
+class MatchRoundIn(BaseModel):
+    round_id: int
+    set_subsequent: bool = True
