@@ -35,13 +35,8 @@ function PasswordModal({ user, onClose }) {
       <form className="modal-form" onSubmit={submit}>
         <label className="field">
           <span>Mật khẩu mới</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
+          <input type="password" value={password}
+            onChange={(e) => setPassword(e.target.value)} required minLength={6} />
         </label>
         <button className="btn btn-primary btn-block" disabled={busy}>
           {busy ? 'Đang lưu…' : 'Cập nhật'}
@@ -54,7 +49,6 @@ function PasswordModal({ user, onClose }) {
 function CreateGroupModal({ onClose, onCreated }) {
   const toast = useToast();
   const [name, setName] = useState('');
-  const [betType, setBetType] = useState('EUROPEAN');
   const [busy, setBusy] = useState(false);
 
   async function submit(e) {
@@ -63,7 +57,7 @@ function CreateGroupModal({ onClose, onCreated }) {
     try {
       await api.prediction('/admin/groups', {
         method: 'POST',
-        body: { name: name.trim(), bet_type: betType },
+        body: { name: name.trim(), bet_type: 'EUROPEAN' },
       });
       toast.success(`Đã tạo group "${name}"`);
       onCreated();
@@ -82,13 +76,6 @@ function CreateGroupModal({ onClose, onCreated }) {
           <span>Tên group</span>
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <label className="field">
-          <span>Loại kèo</span>
-          <select value={betType} onChange={(e) => setBetType(e.target.value)}>
-            <option value="EUROPEAN">Châu Âu (1X2)</option>
-            <option value="ASIAN">Châu Á (handicap)</option>
-          </select>
-        </label>
         <button className="btn btn-primary btn-block" disabled={busy}>
           {busy ? 'Đang tạo…' : 'Tạo group'}
         </button>
@@ -97,147 +84,127 @@ function CreateGroupModal({ onClose, onCreated }) {
   );
 }
 
-function OddsManager() {
+function RoundsManager() {
   const toast = useToast();
+  const rounds = useFetch(() => api.bff('/rounds'), []);
   const fixtures = useFetch(() => api.fixture('/fixtures'), []);
-  const [matchId, setMatchId] = useState('');
-  const [form, setForm] = useState({
-    home_odds: '',
-    draw_odds: '',
-    away_odds: '',
-    handicap: '',
-  });
-  const [busy, setBusy] = useState(false);
-  const [loadingOdds, setLoadingOdds] = useState(false);
+  const [edits, setEdits] = useState({});
+  const [busy, setBusy] = useState({});
+  const [markMatchId, setMarkMatchId] = useState('');
+  const [markRoundId, setMarkRoundId] = useState('');
+  const [marking, setMarking] = useState(false);
 
-  async function selectMatch(id) {
-    setMatchId(id);
-    if (!id) {
-      setForm({ home_odds: '', draw_odds: '', away_odds: '', handicap: '' });
-      return;
-    }
-    setLoadingOdds(true);
+  async function saveMultiplier(round) {
+    const val = parseInt(edits[round.id], 10);
+    if (!Number.isFinite(val) || val < 1) { toast.warn('Hệ số phải là số nguyên ≥ 1'); return; }
+    setBusy((b) => ({ ...b, [round.id]: true }));
     try {
-      const o = await api.fixture(`/fixtures/${id}/odds`);
-      setForm({
-        home_odds: o.home_odds,
-        draw_odds: o.draw_odds,
-        away_odds: o.away_odds,
-        handicap: o.handicap,
+      await api.bff(`/admin/rounds/${round.id}/multiplier`, {
+        method: 'PUT',
+        body: { multiplier: val },
       });
-    } catch {
-      // No odds yet for this match — start from blank.
-      setForm({ home_odds: '', draw_odds: '', away_odds: '', handicap: '' });
-      toast.warn('Trận này chưa có kèo — nhập giá trị mới');
-    } finally {
-      setLoadingOdds(false);
-    }
-  }
-
-  function setField(key, value) {
-    setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  async function save() {
-    const body = {
-      home_odds: Number(form.home_odds),
-      draw_odds: Number(form.draw_odds),
-      away_odds: Number(form.away_odds),
-      handicap: Number(form.handicap),
-    };
-    if (
-      [body.home_odds, body.draw_odds, body.away_odds].some(
-        (v) => !Number.isFinite(v) || v <= 1,
-      ) ||
-      !Number.isFinite(body.handicap)
-    ) {
-      toast.warn('Tỷ lệ 1X2 phải > 1 và handicap phải là số hợp lệ');
-      return;
-    }
-    setBusy(true);
-    try {
-      await api.bff(`/admin/matches/${matchId}/odds`, { method: 'PUT', body });
-      toast.success('Đã cập nhật kèo');
+      toast.success(`Đã cập nhật hệ số vòng "${round.name}"`);
+      rounds.reload();
+      setEdits((e) => { const c = { ...e }; delete c[round.id]; return c; });
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setBusy(false);
+      setBusy((b) => ({ ...b, [round.id]: false }));
     }
   }
 
-  const matches = fixtures.data || [];
+  async function markRound() {
+    if (!markMatchId || !markRoundId) { toast.warn('Chọn trận và vòng đấu'); return; }
+    setMarking(true);
+    try {
+      const res = await api.bff(`/admin/matches/${markMatchId}/round`, {
+        method: 'PUT',
+        body: { round_id: parseInt(markRoundId, 10), set_subsequent: true },
+      });
+      toast.success(`Đã gán ${res.matches_updated} trận sang vòng "${res.round_name}"`);
+      setMarkMatchId('');
+      setMarkRoundId('');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setMarking(false);
+    }
+  }
+
+  const roundList = rounds.data || [];
+  const matchList = (fixtures.data || []).filter((m) => m.status !== 'FINAL');
 
   return (
     <div className="panel">
-      <div className="panel-head">
-        <h3>Quản lý kèo</h3>
-      </div>
-      <p className="hint">Chọn trận để xem và chỉnh tỷ lệ kèo (1X2 + handicap châu Á).</p>
-      <label className="field" style={{ marginBottom: 14 }}>
-        <span>Trận đấu</span>
-        <select value={matchId} onChange={(e) => selectMatch(e.target.value)}>
-          <option value="">— Chọn trận —</option>
-          {matches.map((m) => (
+      <div className="panel-head"><h3>Hệ số vòng đấu</h3></div>
+      <p className="hint">
+        Người thua một trận ở vòng đó cộng số điểm bằng hệ số. (1 điểm = 10,000 ₫, admin tự tính tiền bên ngoài.)
+      </p>
+
+      {rounds.loading ? (
+        <div className="loading">Đang tải vòng đấu…</div>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '6px 8px' }}>Vòng đấu</th>
+              <th style={{ textAlign: 'center', padding: '6px 8px' }}>Hệ số hiện tại</th>
+              <th style={{ textAlign: 'right', padding: '6px 8px' }}>Sửa hệ số</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roundList.map((r) => (
+              <tr key={r.id} style={{ borderTop: '1px solid var(--border)' }}>
+                <td style={{ padding: '8px' }}><strong>{r.name}</strong></td>
+                <td style={{ textAlign: 'center', padding: '8px' }}>
+                  <span className="badge">{r.multiplier} điểm</span>
+                </td>
+                <td style={{ padding: '8px' }}>
+                  <div className="inline-form" style={{ justifyContent: 'flex-end' }}>
+                    <input
+                      type="number" min="1" style={{ width: 70 }}
+                      value={edits[r.id] ?? r.multiplier}
+                      onChange={(e) => setEdits((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                    />
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => saveMultiplier(r)}
+                      disabled={busy[r.id] || String(edits[r.id] ?? r.multiplier) === String(r.multiplier)}
+                    >
+                      {busy[r.id] ? '…' : 'Lưu'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div className="panel-head" style={{ marginTop: 8 }}><h4>Đánh dấu vòng mới từ trận này</h4></div>
+      <p className="hint">Tất cả trận từ trận chọn trở đi sẽ được gán vào vòng mới.</p>
+      <div className="inline-form" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <select value={markMatchId} onChange={(e) => setMarkMatchId(e.target.value)}
+          style={{ flex: 2, minWidth: 200 }}>
+          <option value="">— Chọn trận bắt đầu —</option>
+          {matchList.map((m) => (
             <option key={m.id} value={m.id}>
               {m.home_team} vs {m.away_team} · {formatDateTime(m.kickoff_at)}
             </option>
           ))}
         </select>
-      </label>
-
-      {matchId &&
-        (loadingOdds ? (
-          <div className="loading">Đang tải kèo…</div>
-        ) : (
-          <>
-            <div className="inline-form">
-              <label className="field">
-                <span>Đội nhà (1X2)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.home_odds}
-                  onChange={(e) => setField('home_odds', e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Hoà (1X2)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.draw_odds}
-                  onChange={(e) => setField('draw_odds', e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Đội khách (1X2)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.away_odds}
-                  onChange={(e) => setField('away_odds', e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Handicap (châu Á)</span>
-                <input
-                  type="number"
-                  step="0.25"
-                  value={form.handicap}
-                  onChange={(e) => setField('handicap', e.target.value)}
-                />
-              </label>
-            </div>
-            <button
-              className="btn btn-primary"
-              style={{ marginTop: 14 }}
-              onClick={save}
-              disabled={busy}
-            >
-              {busy ? 'Đang lưu…' : 'Lưu kèo'}
-            </button>
-          </>
-        ))}
+        <select value={markRoundId} onChange={(e) => setMarkRoundId(e.target.value)}
+          style={{ flex: 1, minWidth: 140 }}>
+          <option value="">— Vòng đấu —</option>
+          {roundList.map((r) => (
+            <option key={r.id} value={r.id}>{r.name} (×{r.multiplier})</option>
+          ))}
+        </select>
+        <button className="btn btn-primary" onClick={markRound}
+          disabled={marking || !markMatchId || !markRoundId}>
+          {marking ? 'Đang cập nhật…' : 'Áp dụng'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -253,23 +220,16 @@ export function Admin() {
     { key: 'display_name', label: 'Tên hiển thị', sortable: true, render: (u) => <strong>{u.display_name}</strong> },
     { key: 'username', label: 'Đăng nhập', sortable: true, render: (u) => <span className="mono">{u.username}</span> },
     {
-      key: 'is_admin',
-      label: 'Vai trò',
-      render: (u) =>
-        u.is_admin ? <span className="badge admin">Admin</span> : <span className="hint">Người chơi</span>,
+      key: 'is_admin', label: 'Vai trò',
+      render: (u) => u.is_admin
+        ? <span className="badge admin">Admin</span>
+        : <span className="hint">Người chơi</span>,
     },
     {
-      key: 'actions',
-      label: '',
-      align: 'right',
+      key: 'actions', label: '', align: 'right',
       render: (u) => (
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPwUser(u);
-          }}
-        >
+        <button className="btn btn-secondary btn-sm"
+          onClick={(e) => { e.stopPropagation(); setPwUser(u); }}>
           Đổi mật khẩu
         </button>
       ),
@@ -278,31 +238,21 @@ export function Admin() {
 
   const groupColumns = [
     { key: 'name', label: 'Group', sortable: true, render: (g) => <strong>{g.name}</strong> },
-    {
-      key: 'bet_type',
-      label: 'Loại kèo',
-      render: (g) => (
-        <span className={`badge ${g.bet_type.toLowerCase()}`}>{g.bet_type}</span>
-      ),
-    },
     { key: 'id', label: 'Mã', render: (g) => <span className="mono">{g.id}</span> },
   ];
 
   return (
     <div>
       <div className="section-title">Người dùng</div>
-      {users.loading ? (
-        <div className="loading">Đang tải người dùng…</div>
-      ) : users.error ? (
-        <div className="loading">Không tải được: {users.error.message}</div>
-      ) : (
-        <DataTable columns={userColumns} rows={users.data} />
-      )}
+      {users.loading
+        ? <div className="loading">Đang tải người dùng…</div>
+        : users.error
+          ? <div className="loading">Không tải được: {users.error.message}</div>
+          : <DataTable columns={userColumns} rows={users.data} />
+      }
 
       <div className="row-between" style={{ margin: '28px 0 14px' }}>
-        <div className="section-title" style={{ margin: 0 }}>
-          Group
-        </div>
+        <div className="section-title" style={{ margin: 0 }}>Group</div>
         <button className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
           + Thêm group
         </button>
@@ -314,15 +264,11 @@ export function Admin() {
         empty="Chưa có group nào"
       />
 
-      <div className="section-title" style={{ marginTop: 28 }}>
-        Kèo
-      </div>
-      <OddsManager />
+      <div className="section-title" style={{ marginTop: 28 }}>Vòng đấu & Hệ số điểm</div>
+      <RoundsManager />
 
       {pwUser && <PasswordModal user={pwUser} onClose={() => setPwUser(null)} />}
-      {creating && (
-        <CreateGroupModal onClose={() => setCreating(false)} onCreated={refreshGroups} />
-      )}
+      {creating && <CreateGroupModal onClose={() => setCreating(false)} onCreated={refreshGroups} />}
     </div>
   );
 }
