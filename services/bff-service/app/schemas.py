@@ -70,3 +70,10 @@ class MatchDetail(BaseModel):
 class DepositIn(BaseModel):
     depositor: str
     amount_minor: int
+
+
+class OddsUpdateIn(BaseModel):
+    home_odds: float
+    draw_odds: float
+    away_odds: float
+    handicap: float

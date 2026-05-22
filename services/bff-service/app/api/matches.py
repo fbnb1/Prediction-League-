@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 
 from app.aggregation import match_detail
-from app.auth import bearer_token, get_current_user
+from app.auth import bearer_token, get_current_user, require_admin
 from app.clients import fixture, prediction
-from app.schemas import MatchDetail
+from app.schemas import MatchDetail, OddsUpdateIn
 
 router = APIRouter(tags=["matches"])
 
@@ -23,3 +23,13 @@ def match_detail_endpoint(
     pick_results = fixture.get_pick_results(group_id)
     group_picks_for_match = [p for p in pick_results if p["match_id"] == match_id]
     return match_detail(match, group_picks_for_match, names)
+
+
+@router.put("/admin/matches/{match_id}/odds")
+def update_match_odds(
+    match_id: str,
+    body: OddsUpdateIn,
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    """Admin override of a match's odds. Proxied to fixture-service."""
+    return fixture.update_odds(match_id, body.model_dump())

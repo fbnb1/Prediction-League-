@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -73,6 +73,58 @@ def refresh_odds(session: Session, provider: FixtureProvider) -> int:
             odds.updated_at = now
     session.commit()
     return len(match_ids)
+
+
+def set_match_odds(
+    session: Session,
+    match_id: str,
+    home_odds: float,
+    draw_odds: float,
+    away_odds: float,
+    handicap: float,
+) -> Odds:
+    """Manually set (upsert) the odds for one match. Used by the admin override."""
+    match = session.get(Match, match_id)
+    if match is None:
+        raise MatchNotFound(match_id)
+    odds = session.query(Odds).filter_by(match_id=match_id).one_or_none()
+    if odds is None:
+        odds = Odds(match_id=match_id)
+        session.add(odds)
+    odds.home_odds = home_odds
+    odds.draw_odds = draw_odds
+    odds.away_odds = away_odds
+    odds.handicap = handicap
+    odds.updated_at = _now()
+    session.commit()
+    session.refresh(odds)
+    return odds
+
+
+def sync_results(session: Session, provider: FixtureProvider) -> int:
+    """Poll the provider for finished-match scores and settle any match that
+    has a result but is not settled yet. Returns the number settled.
+
+    Only matches that kicked off more than an hour ago are considered, so the
+    provider (and its API quota) is touched only when a result could actually
+    exist -- nothing is spent on quiet days."""
+    cutoff = _now() - timedelta(hours=1)
+    match_ids = [
+        row[0]
+        for row in session.query(Match.id)
+        .filter(Match.status != "SETTLED", Match.kickoff_at < cutoff)
+        .all()
+    ]
+    if not match_ids:
+        return 0
+    settled = 0
+    for result in provider.get_results(match_ids):
+        match = session.get(Match, result.match_id)
+        if match is None or match.status == "SETTLED":
+            continue
+        settle_match(session, result.match_id, result.home_score, result.away_score)
+        settled += 1
+    return settled
 
 
 def settle_match(session: Session, match_id: str, home_score: int, away_score: int) -> dict:

@@ -6,8 +6,8 @@ from app.admin_auth import require_admin_key
 from app.db import get_session
 from app.errors import MatchAlreadySettled, MatchNotFound
 from app.models import Match
-from app.providers.mock import MockFixtureProvider
-from app.schemas import KickoffIn, ResultIn
+from app.providers.factory import get_provider
+from app.schemas import KickoffIn, OddsOut, OddsUpdateIn, ResultIn
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin_key)])
 
@@ -25,10 +25,28 @@ def enter_result(match_id: str, body: ResultIn, session: Session = Depends(get_s
 
 @router.post("/sync")
 def trigger_sync(session: Session = Depends(get_session)) -> dict:
-    provider = MockFixtureProvider()
+    provider = get_provider()
     created = operations.sync_fixtures(session, provider)
     refreshed = operations.refresh_odds(session, provider)
     return {"fixtures_created": created, "odds_refreshed": refreshed}
+
+
+@router.put("/matches/{match_id}/odds", response_model=OddsOut)
+def update_odds(
+    match_id: str, body: OddsUpdateIn, session: Session = Depends(get_session)
+):
+    """Admin override for a match's odds (1X2 prices + Asian handicap line)."""
+    try:
+        return operations.set_match_odds(
+            session,
+            match_id,
+            body.home_odds,
+            body.draw_odds,
+            body.away_odds,
+            body.handicap,
+        )
+    except MatchNotFound:
+        raise HTTPException(status_code=404, detail="match not found")
 
 
 @router.put("/matches/{match_id}/kickoff")

@@ -46,11 +46,6 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <button className="btn btn-ghost btn-block" onClick={logout}>
-            Đăng xuất
-          </button>
-        </div>
       </aside>
 
       <div className="main">
@@ -65,6 +60,13 @@ export function Layout() {
                 <small>{user?.is_admin ? 'Quản trị viên' : 'Người chơi'}</small>
               </div>
             </div>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={logout}
+              title="Đăng xuất"
+            >
+              Đăng xuất
+            </button>
           </div>
         </header>
         <main className="content">

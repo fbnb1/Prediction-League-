@@ -169,6 +169,11 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key-change-me}
+      # Real football data via The Odds API. Leave ODDS_API_KEY empty to use
+      # the bundled mock provider. ODDS_REFRESH_MINUTES=0 = pull odds once.
+      ODDS_API_KEY: ${ODDS_API_KEY:-}
+      ODDS_API_SPORTS: ${ODDS_API_SPORTS:-}
+      ODDS_REFRESH_MINUTES: ${ODDS_REFRESH_MINUTES:-0}
     depends_on:
       fixture-db:
         condition: service_healthy

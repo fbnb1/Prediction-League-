@@ -22,3 +22,19 @@ def get_pick_results(group_id: str) -> list[dict]:
         "/fixtures/pick-results",
         params={"group_id": group_id},
     )
+
+
+def get_odds(match_id: str) -> dict:
+    """A match's odds: 1X2 prices and the Asian handicap line."""
+    return request("GET", settings.fixture_url, f"/fixtures/{match_id}/odds")
+
+
+def update_odds(match_id: str, body: dict) -> dict:
+    """Admin override of a match's odds. Proxied with the admin key."""
+    return request(
+        "PUT",
+        settings.fixture_url,
+        f"/admin/matches/{match_id}/odds",
+        admin_key=settings.admin_api_key,
+        json=body,
+    )

@@ -163,8 +163,6 @@ input:focus, select:focus {
   color: var(--brand);
   box-shadow: inset 2px 0 0 var(--brand);
 }
-.sidebar-foot { margin-top: auto; padding: 12px 8px 0; }
-
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
@@ -409,6 +407,43 @@ input:focus, select:focus {
 .group-selector { display: flex; align-items: center; gap: 8px; }
 .group-selector select { width: auto; min-width: 200px; }
 
+/* ===================== Odds / betting ===================== */
+.odds-grid {
+  display: grid; gap: 10px;
+}
+.odds-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.odds-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.odds-cell {
+  display: flex; flex-direction: column; gap: 4px;
+  align-items: center; text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  font-family: var(--font);
+  cursor: default;
+}
+button.odds-cell { cursor: pointer; transition: border-color .15s, background .15s, transform .08s; }
+button.odds-cell:hover:not(:disabled) { border-color: var(--brand); }
+button.odds-cell:active:not(:disabled) { transform: translateY(1px) scale(.99); }
+button.odds-cell:disabled { opacity: .55; cursor: not-allowed; }
+.odds-cell.active {
+  border-color: var(--brand);
+  background: linear-gradient(135deg, rgba(0,184,107,.16), rgba(0,184,107,.05));
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+.odds-cell .oc-label { font-size: 12px; font-weight: 600; color: var(--text-dim); }
+.odds-cell .oc-value { font-family: var(--display); font-weight: 800; font-size: 20px; }
+.odds-cell.active .oc-value { color: var(--brand); }
+.odds-line {
+  font-size: 12px; color: var(--text-mute); margin-bottom: 10px;
+}
+.odds-line strong { color: var(--text-dim); }
+.odds-actions { display: flex; gap: 10px; }
+.bet-status { font-size: 12.5px; margin-top: 10px; }
+.bet-status.ok { color: var(--brand); }
+.bet-status.err { color: var(--red); }
+
 /* ===================== Responsive ===================== */
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
@@ -420,8 +455,41 @@ input:focus, select:focus {
   .brand-text { display: none; }
   .nav { flex-direction: row; }
   .nav-item span:not(.ni) { display: none; }
-  .sidebar-foot { display: none; }
   .topbar { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
+  .topbar-right { flex-wrap: wrap; gap: 8px; row-gap: 8px; }
+  .group-selector select { min-width: 0; max-width: 100%; }
   .content { padding: 18px; }
   .stat-cards { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 12px 14px; }
+  .topbar h2 { font-size: 17px; }
+  .topbar-right { width: 100%; justify-content: space-between; }
+  .group-selector { flex: 1; }
+  .group-selector select { width: 100%; }
+  .user-meta small { display: none; }
+  .content { padding: 12px; }
+
+  .panel { padding: 14px; }
+  .section-title { margin: 20px 0 10px; }
+
+  .mc-teams { gap: 8px; }
+  .team .tname { font-size: 13px; word-break: break-word; }
+  .mc-score { font-size: 18px; }
+
+  /* Odds panels stack on small screens; bet buttons go full-width */
+  .odds-grid { grid-template-columns: 1fr; }
+  .odds-actions { flex-direction: column; }
+  .odds-actions .btn { width: 100%; }
+
+  /* Tables scroll horizontally instead of breaking the layout */
+  .table-wrap { overflow-x: auto; }
+  .data-table { min-width: 460px; }
+
+  .inline-form { flex-direction: column; align-items: stretch; }
+  .inline-form input, .inline-form select, .inline-form .btn { width: 100%; }
+
+  .stat-cards { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; }
 }

@@ -33,15 +33,21 @@ export function PieChart({ slices }) {
           />
         ) : (
           (() => {
+            const active = slices.filter((s) => s.value > 0);
+            // A single non-zero slice would be a degenerate 360° arc -- draw a
+            // full circle instead so picking one outcome shows cleanly.
+            if (active.length === 1) {
+              return (
+                <circle cx={CENTER} cy={CENTER} r={R} fill={active[0].color} />
+              );
+            }
             let angle = 0;
-            return slices
-              .filter((s) => s.value > 0)
-              .map((s) => {
-                const sweep = (s.value / total) * 360;
-                const path = arcPath(angle, angle + sweep);
-                angle += sweep;
-                return <path key={s.label} d={path} fill={s.color} />;
-              });
+            return active.map((s) => {
+              const sweep = (s.value / total) * 360;
+              const path = arcPath(angle, angle + sweep);
+              angle += sweep;
+              return <path key={s.label} d={path} fill={s.color} />;
+            });
           })()
         )}
       </svg>

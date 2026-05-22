@@ -9,7 +9,7 @@ from app.api import admin, fixtures
 from app.db import SessionLocal
 from app.jobs.scheduler import build_scheduler
 from app.messaging.pick_locked_consumer import run_consumer
-from app.providers.mock import MockFixtureProvider
+from app.providers.factory import get_provider
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,11 +22,16 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Seed fixtures and odds on first start (idempotent).
     with SessionLocal() as session:
-        provider = MockFixtureProvider()
-        created = operations.sync_fixtures(session, provider)
-        if created:
-            logger.info("seeded %d fixtures", created)
-        operations.refresh_odds(session, provider)
+        provider = get_provider()
+        try:
+            created = operations.sync_fixtures(session, provider)
+            if created:
+                logger.info("seeded %d fixtures", created)
+            operations.refresh_odds(session, provider)
+        except Exception:
+            # A provider outage at startup must not stop the service booting;
+            # the scheduled jobs will retry.
+            logger.exception("initial fixture/odds sync failed")
 
     stop_event = threading.Event()
     consumer_thread = threading.Thread(target=run_consumer, args=(stop_event,), daemon=True)

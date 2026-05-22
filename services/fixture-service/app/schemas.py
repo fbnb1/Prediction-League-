@@ -47,6 +47,15 @@ class KickoffIn(BaseModel):
     kickoff_at: datetime
 
 
+class OddsUpdateIn(BaseModel):
+    """Admin override for a match's odds."""
+
+    home_odds: float = Field(gt=1.0)
+    draw_odds: float = Field(gt=1.0)
+    away_odds: float = Field(gt=1.0)
+    handicap: float
+
+
 class MatchPickOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
