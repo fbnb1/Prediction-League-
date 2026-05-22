@@ -6,10 +6,11 @@ from app.config import settings
 
 
 class MatchOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=False)
 
     id: str
     round_id: int
+    round_multiplier: int = 1
     group_code: str | None
     home_team: str
     away_team: str
@@ -25,6 +26,16 @@ class MatchOut(BaseModel):
     def lock_at(self) -> datetime:
         """When picks lock: a fixed offset before kickoff."""
         return self.kickoff_at - timedelta(minutes=settings.lock_offset_minutes)
+
+
+class RoundOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    code: str
+    name: str
+    sequence: int
+    multiplier: int
 
 
 class OddsOut(BaseModel):
@@ -48,12 +59,19 @@ class KickoffIn(BaseModel):
 
 
 class OddsUpdateIn(BaseModel):
-    """Admin override for a match's odds."""
-
     home_odds: float = Field(gt=1.0)
     draw_odds: float = Field(gt=1.0)
     away_odds: float = Field(gt=1.0)
     handicap: float
+
+
+class RoundMultiplierIn(BaseModel):
+    multiplier: int = Field(ge=1)
+
+
+class MatchRoundIn(BaseModel):
+    round_id: int
+    set_subsequent: bool = True
 
 
 class MatchPickOut(BaseModel):
@@ -68,13 +86,14 @@ class MatchPickOut(BaseModel):
 
 
 class PickResultOut(BaseModel):
-    """A locked pick joined with its match result and settled outcome."""
+    """A locked pick joined with its match result, round multiplier, and settled outcome."""
 
     match_id: str
     user_id: str
     predicted_outcome: str | None
     auto_loss: bool
     stake_minor: int
+    round_multiplier: int
     bet_type: str
     home_team: str
     away_team: str

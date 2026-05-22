@@ -25,6 +25,7 @@ class Round(Base):
     code: Mapped[str] = mapped_column(String(16), unique=True)
     name: Mapped[str] = mapped_column(String(64))
     sequence: Mapped[int] = mapped_column(Integer)
+    multiplier: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class Match(Base):
