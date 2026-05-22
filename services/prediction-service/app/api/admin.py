@@ -7,7 +7,7 @@ from app.db import get_session
 from app.errors import GroupNotFound
 from app.lock import lock_match
 from app.messaging.rabbit import publish_pick_locked
-from app.models import Group, User
+from app.models import Group, GroupMember, User
 from app.schemas import (
     AddMemberIn,
     AdminGroupIn,
@@ -96,3 +96,22 @@ def add_member(
     except GroupNotFound:
         raise HTTPException(status_code=404, detail="group not found")
     return {"status": "added", "group_id": group_id, "user_id": target.id}
+
+
+@router.delete("/groups/{group_id}/members/{user_id}", status_code=204)
+def remove_member(
+    group_id: str,
+    user_id: str,
+    session: Session = Depends(get_session),
+) -> Response:
+    """Admin affordance: remove a user from a group."""
+    member = (
+        session.query(GroupMember)
+        .filter_by(group_id=group_id, user_id=user_id)
+        .one_or_none()
+    )
+    if member is None:
+        raise HTTPException(status_code=404, detail="member not found")
+    session.delete(member)
+    session.commit()
+    return Response(status_code=204)
