@@ -43,3 +43,24 @@ def set_match_round(match_id: str, round_id: int, set_subsequent: bool = True) -
         admin_key=settings.admin_api_key,
         json={"round_id": round_id, "set_subsequent": set_subsequent},
     )
+
+
+def sync_all() -> dict:
+    """Trigger fixture-service to sync fixtures + refresh odds from the provider."""
+    return request(
+        "POST",
+        settings.fixture_url,
+        "/admin/sync",
+        admin_key=settings.admin_api_key,
+    )
+
+
+def settle_match(match_id: str, home_score: int, away_score: int) -> dict:
+    """Manually settle a match with a given score."""
+    return request(
+        "POST",
+        settings.fixture_url,
+        f"/admin/matches/{match_id}/result",
+        admin_key=settings.admin_api_key,
+        json={"home_score": home_score, "away_score": away_score},
+    )

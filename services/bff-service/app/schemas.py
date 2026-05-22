@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LeaderboardRow(BaseModel):
@@ -70,3 +70,8 @@ class RoundMultiplierIn(BaseModel):
 class MatchRoundIn(BaseModel):
     round_id: int
     set_subsequent: bool = True
+
+
+class ResultIn(BaseModel):
+    home_score: int = Field(ge=0)
+    away_score: int = Field(ge=0)

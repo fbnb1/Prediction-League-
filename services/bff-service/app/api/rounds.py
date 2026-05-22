@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.auth import get_current_user, require_admin
 from app.clients import fixture
-from app.schemas import MatchRoundIn, RoundMultiplierIn, RoundOut
+from app.schemas import MatchRoundIn, ResultIn, RoundMultiplierIn, RoundOut
 
 router = APIRouter(tags=["rounds"])
 
@@ -31,3 +31,19 @@ def set_match_round(
 ) -> dict:
     """Admin: assign a match (and optionally all subsequent) to a round."""
     return fixture.set_match_round(match_id, body.round_id, body.set_subsequent)
+
+
+@router.post("/admin/sync")
+def sync_fixtures(_admin: dict = Depends(require_admin)) -> dict:
+    """Admin: trigger fixture-service to sync fixtures + refresh odds from provider."""
+    return fixture.sync_all()
+
+
+@router.post("/admin/matches/{match_id}/result")
+def settle_match(
+    match_id: str,
+    body: ResultIn,
+    _admin: dict = Depends(require_admin),
+) -> dict:
+    """Admin: manually enter a match result and settle all picks."""
+    return fixture.settle_match(match_id, body.home_score, body.away_score)
