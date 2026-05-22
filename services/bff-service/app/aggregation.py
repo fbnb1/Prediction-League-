@@ -68,8 +68,8 @@ def deposit_items(deposits: list[dict], names: dict[str, str]) -> list[DepositIt
         DepositItem(
             user_id=d["depositor"],
             display_name=names.get(d["depositor"], d["depositor"]),
-            amount_minor=d["amountMinor"],
-            posted_at=d.get("postedAt"),
+            amount_minor=d["amount_minor"],
+            posted_at=d.get("posted_at"),
         )
         for d in deposits
     ]

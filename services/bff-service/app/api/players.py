@@ -28,7 +28,7 @@ def player_summary(
     deposits = ledger.get_deposits(group_id, user_id)
 
     money_lost = sum(p["stake_minor"] for p in user_picks if p["result"] == "LOST")
-    deposited = account["creditMinor"]
+    deposited = account["credit_minor"]
     return PlayerSummary(
         user_id=user_id,
         display_name=names.get(user_id, user_id),

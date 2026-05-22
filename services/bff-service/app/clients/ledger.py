@@ -30,8 +30,8 @@ def post_deposit(group_id: str, depositor: str, amount_minor: int) -> dict:
         "/admin/deposits",
         admin_key=settings.admin_api_key,
         json={
-            "groupId": group_id,
+            "group_id": group_id,
             "depositor": depositor,
-            "amountMinor": amount_minor,
+            "amount_minor": amount_minor,
         },
     )

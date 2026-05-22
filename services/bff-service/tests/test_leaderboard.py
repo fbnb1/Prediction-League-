@@ -34,10 +34,10 @@ def test_leaderboard_aggregates_picks_and_deposits(user_token):
         side_effect=lambda request: httpx.Response(
             200,
             json={
-                "ownerId": f"{request.url.params['userId']}:{group_id}",
-                "debitMinor": 0,
-                "creditMinor": 20000,
-                "balanceMinor": 20000,
+                "owner_id": f"{request.url.params['userId']}:{group_id}",
+                "debit_minor": 0,
+                "credit_minor": 20000,
+                "balance_minor": 20000,
             },
         )
     )

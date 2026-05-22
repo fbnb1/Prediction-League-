@@ -21,7 +21,7 @@ def group_leaderboard(
         leaderboard_row(
             member,
             picks_for_user(pick_results, member["user_id"]),
-            ledger.get_player_account(member["user_id"], group_id)["creditMinor"],
+            ledger.get_player_account(member["user_id"], group_id)["credit_minor"],
         )
         for member in members
     ]
