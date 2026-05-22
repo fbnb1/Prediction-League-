@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI
 
-from app.api import deposits, leaderboard, matches, players
+from app.api import leaderboard, matches, players, rounds
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,7 +13,7 @@ app = FastAPI(title="BFF Service")
 app.include_router(leaderboard.router)
 app.include_router(players.router)
 app.include_router(matches.router)
-app.include_router(deposits.router)
+app.include_router(rounds.router)
 
 
 @app.get("/health")
