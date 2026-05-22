@@ -52,6 +52,7 @@ export function MatchDetail() {
   const detail = useFetch(
     () => api.bff(`/matches/${matchId}/detail?group_id=${groupId}`),
     [matchId, groupId],
+    { refreshInterval: 60000 },
   );
   // Odds may not exist yet (404) -> handled softly via the error state.
   const odds = useFetch(

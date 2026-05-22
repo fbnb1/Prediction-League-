@@ -12,6 +12,7 @@ function LeaderboardTable({ groupId }) {
   const { data, loading, error } = useFetch(
     () => api.bff(`/groups/${groupId}/leaderboard`),
     [groupId],
+    { refreshInterval: 60000 },
   );
 
   if (loading) return <div className="loading">Đang tải bảng xếp hạng…</div>;
@@ -57,7 +58,7 @@ function LeaderboardTable({ groupId }) {
 
 function MatchesStrip() {
   const navigate = useNavigate();
-  const { data, loading } = useFetch(() => api.fixture('/fixtures'), []);
+  const { data, loading } = useFetch(() => api.fixture('/fixtures'), [], { refreshInterval: 60000 });
 
   if (loading) return <div className="loading">Đang tải trận đấu…</div>;
   const matches = data || [];
